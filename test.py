@@ -20,6 +20,8 @@ vz = 0.1
 
 maxVelocity = 30 # ft/s
 
+initialVelocity = 20.4
+
 # time in seconds
 dt = 0.1
 
@@ -30,7 +32,7 @@ CT = math.sqrt(CD*CD + CL*CL)
 # 4kg(payload) + 0.5kg (parafoil)
 W = 9.8*(4 + 0.5)
 # density kg/m^3
-p = 1.225 
+#p = 1.225 
 # Area m^2
 A = 0.72
 
@@ -52,43 +54,106 @@ def getAirDensity(altitude):
     return rho
 
 def printCoords(t, x, y, z, glide):
-    print("Time",t,": (",x, ",", y ,',', z,")", "Vz ", vz,"glide ", math.degrees(glide))
+    print("Time",t,": (",x, ",", y ,',', z,")","glide ", math.degrees(glide))
 
-def calculateLift(vel):
+def calculateLift(vel, p):
     return 0.5*p*vel*vel*A*CL
 
-def calculateDrag(vel):
+def calculateDrag(vel, p):
     return 0.5*p*vel*vel*A*CD
 
-def calculateEquilibriumGlideAngle(vel):
-    return 1/math.atan(-calculateDrag(vel) / calculateLift(vel))
+def calculateEquilibriumGlideAngle(vel, p):
+    return 1/math.atan(-calculateDrag(vel, p) / calculateLift(vel, p))
 
-def calculateGlideAngle(bankAngle, vel):
-    return 1/math.atan(-calculateDrag(vel)/(calculateLift(vel)*math.cos(bankAngle)))
+def calculateGlideAngle(bankAngle, vel, p):
+    return 1/math.atan(-calculateDrag(vel, p)/(calculateLift(vel, p)*math.cos(bankAngle)))
 
 def calculateEquilibriumVelocity(alt, v0, h0):
     airPressureRatio = getAirDensity(h0)/getAirDensity(alt)
     return math.sqrt(airPressureRatio*v0*v0)
 
 def calculateVelocity(equiVel, glideAngle, equiGlideAngle, bankAngle):
-    num = equiVel*equiVel * math.cos(bankAngle)
+    num = equiVel*equiVel * math.cos(glideAngle)
     denom = math.cos(equiGlideAngle) * math.cos(bankAngle)
-    return math.sqrt(num/denom)
+    return math.sqrt((num/denom))
 
 def calculateTurningAccel(velocity, bankAngle, glideAngle):
     return -9.81*math.tan(bankAngle)/(velocity*velocity*math.sin(glideAngle))
 
-def calculateXVel(turnRate, glideAngle):
-    return -math.cos(turnRate)/math.tan(glideAngle)
+def calculateXVel(velocity, turnRate, glideAngle):
+    return velocity*math.cos(turnRate)*math.cos(glideAngle)
 
-def calculateYVel(turnRate, glideAngle):
-    return -math.sin(turnRate)/math.tan(glideAngle)
+def calculateYVel(velocity, turnRate, glideAngle):
+    return velocity * math.sin(turnRate)*math.cos(glideAngle)
 
 def calculateAltitude(vel, glideAngle):
-    return vel*math.sin*(glideAngle)
+    return vel*math.sin(glideAngle)
+
+def quasiSteadyStateEstimation():
+    px = 0
+    py = 0
+    pz = 3200
+    pxy = 0
+    time = 0
+    bankAngle = 0
+    turningRate = 0
+    azimuthAngle = 0.5
+    lastVelocity = initialVelocity
+    coordsT = []
+    coordsX = []
+    coordsZ = []
+    coordsY = []
+    coordsRho = []
+    while (pz > 0 or pz > 2000):
+
+        p = getAirDensity(pz)
+        L = calculateLift(lastVelocity, p)
+        D = calculateDrag(lastVelocity, p)
+        EquilibtriumGlideAngle = calculateEquilibriumGlideAngle(pz, p)
+        GlideAngle = calculateGlideAngle(bankAngle, lastVelocity, p)
+        EquilibriumVelocity = calculateEquilibriumVelocity(pz, initialVelocity, 0)
+        velocity = calculateVelocity(EquilibriumVelocity, GlideAngle, EquilibtriumGlideAngle, bankAngle)
+        turningAccel = calculateTurningAccel(velocity, bankAngle, GlideAngle)
+        
+        if(time > 10 and time < 20): 
+            bankAngle = 0.05
+        else:
+            if(time > 20):
+                bankAngle = -0.05
+            else:
+                bankAngle = 0
+
+        turningRate += turningAccel*dt
+        azimuthAngle += turningRate*dt
+        px += calculateXVel(velocity, azimuthAngle, GlideAngle)*dt
+        py += calculateYVel(velocity, azimuthAngle, GlideAngle)*dt
+        pz += calculateAltitude(velocity, GlideAngle)* dt
+        time += dt
+        coordsT.append(time)
+        coordsX.append(px)
+        coordsY.append(py)
+        coordsZ.append(pz)
+        printCoords(time, px, py, pz, glidePathAngle)
 
 
-def main():
+        lastVelocity = velocity
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection = '3d')
+    ax.plot(coordsX, coordsY,coordsZ)
+
+    ax.set_xlabel(r'Down Range - X (m)', fontsize = 15)
+    ax.set_ylabel(r'Cross-Range - Y (m)', fontsize = 15)
+    ax.set_zlabel(r'Altitude - Z (m)', fontsize = 15)
+    ax.set_title('Parafoil Trajectory')
+    ax.grid(True)
+
+    plt.show()
+        
+
+
+def steadyStateEstimation():
+    p = 1.225
     px = 0
     py = 0
     pz = 1400
@@ -102,12 +167,15 @@ def main():
     while (pz > 0 or pz > 2000):
         #p = getAirDensity(pz)
         v = math.sqrt(2*W/(p*A*CT))
-        glidePathAngle = calculateGlideAngle(v)
+        glidePathAngle = calculateEquilibriumGlideAngle(v, p)
         vxy = v * math.cos(glidePathAngle)
-        print('turning speed: ', vxy/radius)
+        #print('turning speed: ', vxy/radius)
         vz = v*math.sin(glidePathAngle)
 
-        heading = 3.1415*time/radius
+        if(time > 10 and time < 30):
+            heading = 3.1415*time/radius
+        else:
+            heading = 0
         vx = math.cos(heading) * vxy
         vy = math.sin(heading) * vxy
         px += dt * vx
@@ -120,15 +188,15 @@ def main():
         coordsX.append(px)
         coordsY.append(py)
         coordsZ.append(pz)
-        coordsRho.append(p)
+        #coordsRho.append(p)
     
-    fig2 = plt.figure()
-    ax2 = fig2.add_subplot()
+    #fig2 = plt.figure()
+    #ax2 = fig2.add_subplot()
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection = '3d')
     ax.plot(coordsX, coordsY,coordsZ)
-    ax2.scatter(coordsZ, coordsRho)
+   # ax2.scatter(coordsZ, coordsRho)
 
     ax.set_xlabel(r'Down Range (m)', fontsize = 15)
     ax.set_ylabel(r'Cross-Range (m)', fontsize = 15)
@@ -136,12 +204,17 @@ def main():
     ax.set_title('3D position graph')
     ax.grid(True)
 
-    ax2.set_xlabel(r'Altitude(meters)', fontsize = 15)
-    ax2.set_ylabel(r'Air denity(Kg/m^3)', fontsize = 15)
-    ax2.set_title('Air density vs altitude')
-    ax2.grid(True)
+    #ax2.set_xlabel(r'Altitude(meters)', fontsize = 15)
+    #ax2.set_ylabel(r'Air denity(Kg/m^3)', fontsize = 15)
+    #ax2.set_title('Air density vs altitude')
+    #ax2.grid(True)
 
     plt.show()
-    
+
+
+def main():
+    quasiSteadyStateEstimation()
+
+
 if __name__ == "__main__":
     main()
