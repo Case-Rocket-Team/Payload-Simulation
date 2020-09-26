@@ -8,20 +8,20 @@ g = 9.81
 density = 1.225
 # Defined Constants for our parafoil
 parafoil = {
-    'Canopy Area' : 0.5,           # m^2
-    'Canopy Mass' : 0.5,            # kg
+    'Canopy Area' : 0.5,            # m^2
+    'Canopy Mass' : 0.0894,         # kg
     'Payload Mass' : 4,             # kg
-    'Coffecient of Drag' : 0.2,
-    'Coeffecient of Lift' : 0.8,
+    'Coffecient of Drag' : 0.18,
+    'Coeffecient of Lift' : 0.84,
 }
 # State of the vehicle
 parafoil_state = {
     'X-position' : 0,               # m
     'Y-position' : 0,               # m 
     'Altitude' : 1400,              # m
-    'Glide Angle' : -14,          # degrees
+    'Glide Angle' : -12,          # degrees
     'Bank Angle' : 0,               # degrees
-    'Azimuth Angle' : 45,            # degrees from x-axis
+    'Azimuth Angle' : 0,            # degrees from x-axis
     'Velocity' : 11.14,             # m/s
 }
 def main():
