@@ -8,10 +8,10 @@ g = 9.81
 density = 1.225
 # Defined Constants for our parafoil
 parafoil = {
-    'Canopy Area' : 0.72,           # m^2
+    'Canopy Area' : 0.5,           # m^2
     'Canopy Mass' : 0.5,            # kg
     'Payload Mass' : 4,             # kg
-    'Coffecient of Drag' : 0.1,
+    'Coffecient of Drag' : 0.2,
     'Coeffecient of Lift' : 0.8,
 }
 # State of the vehicle
@@ -19,7 +19,7 @@ parafoil_state = {
     'X-position' : 0,               # m
     'Y-position' : 0,               # m 
     'Altitude' : 1400,              # m
-    'Glide Angle' : -7.12,          # degrees
+    'Glide Angle' : -14,          # degrees
     'Bank Angle' : 0,               # degrees
     'Azimuth Angle' : 45,            # degrees from x-axis
     'Velocity' : 11.14,             # m/s
@@ -54,14 +54,14 @@ def main():
     unsteady_y_positions = [unsteady_parafoil_state["Y-position"]]
     unsteady_altitudes = [unsteady_parafoil_state['Altitude']]
     unsteady_time = 0
-    # Run loop taht iterates the kinematic unsteady state equations
+    # Run loop that iterates the kinematic unsteady state equations
     while unsteady_parafoil_state['Altitude'] > 0:
         #print("Time is: ", unsteady_time)
         unsteady.updatePosition(parafoil, unsteady_parafoil_state, dt)
-        if unsteady_time > 250 and unsteady_time < 251:
-            unsteady_parafoil_state['Bank Angle'] = 5
-        elif unsteady_time > 750 and unsteady_time < 751:
-            unsteady_parafoil_state['Bank Angle'] = 0
+        # if unsteady_time > 250 and unsteady_time < 251:
+        #     unsteady_parafoil_state['Bank Angle'] = 5
+        # elif unsteady_time > 750 and unsteady_time < 751:
+        #     unsteady_parafoil_state['Bank Angle'] = 0
         #print("Coords (X,Y,Z): (",unsteady_parafoil_state['X-position'], ", ", unsteady_parafoil_state['Y-position'], ", ", unsteady_parafoil_state['Altitude'], ")")
         unsteady_time += dt
         unsteady_times.append(unsteady_time)
@@ -93,9 +93,6 @@ def main():
     plt.title("Glide Angle vs Time")
     plt.legend()
 
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-    # ax = plt.axes(projection='3d')
     fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
     ax.plot(unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, c = 'Green', label = "Unsteady State")
     #ax.plot(x_positions, y_positions, altitudes, c = 'Blue', label = "Steady State")

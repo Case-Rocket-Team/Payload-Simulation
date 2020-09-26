@@ -21,8 +21,8 @@ class SteadyState:
         glide_angle = math.degrees(math.atan(- drag_force / lift_force))
         parafoil_state['Glide Angle'] = glide_angle
     # Calculate Turning Velocity
-    def calcTurningVelocity():
-        return 30
+    # def calcTurningVelocity():
+    #     return 30
     # Run loop
     def updatePosition(self, parafoil, parafoil_state, dt):
         lift_force = self.calcLiftForce(parafoil, parafoil_state)
