@@ -1,20 +1,21 @@
 import math
+
 g = 9.81
 density = 1.225
 class SteadyState:
     # Calculate total velocity magnitude
     def calcVelocity(self, parafoil, parafoil_state, lift_force, drag_force, dt):
         weight = (parafoil['Payload Mass'] + parafoil['Canopy Mass']) * g
-        ct = math.sqrt((parafoil['Coffecient of Drag'] ** 2) + (parafoil['Coeffecient of Lift'] ** 2))
-        velocity = math.sqrt((2 / density) * (weight / parafoil['Canopy Area']) * (1 / ct))
+        ct = math.sqrt((parafoil['Vehicle Coefficients']['CD'] ** 2) + (parafoil['Vehicle Coefficients']['CL'] ** 2))
+        velocity = math.sqrt((2 / density) * (weight / (parafoil['Span'] * parafoil['Chord']) * (1 / ct)))
         parafoil_state['Velocity'] = velocity
     # Calculate Lift Force
     def calcLiftForce(self, parafoil, parafoil_state):
-        lift_force = 0.5 * density * (parafoil_state['Velocity'] ** 2) * parafoil['Canopy Area'] * parafoil['Coeffecient of Lift']
+        lift_force = 0.5 * density * (parafoil_state['Velocity'] ** 2) * (parafoil['Span'] * parafoil['Chord']) * parafoil['Vehicle Coefficients']['CL']
         return lift_force
     # Calculate Drag Force
     def calcDragForce(self, parafoil, parafoil_state):
-        drag_force = 0.5 * density * (parafoil_state['Velocity'] ** 2) * parafoil['Canopy Area'] * parafoil['Coffecient of Drag']
+        drag_force = 0.5 * density * (parafoil_state['Velocity'] ** 2) * (parafoil['Span'] * parafoil['Chord']) * parafoil['Vehicle Coefficients']['CD']
         return drag_force
     # Calculate Glide Angle
     def calcGlideAngle(self, parafoil, parafoil_state, lift_force, drag_force, dt):
