@@ -12,7 +12,7 @@ density = 1.225
 parafoil_baked = {
     'Span' : 1.016,                     # m
     'Chord' : 0.508,                    # m
-    'Canopy Mass' : 0.0894,             # kg
+    'Canopy Mass' : 0.049,              # kg
     'Payload Mass' : 3,                 # kg
     'Vehicle Coefficients' : {
         'CL' : 0.8,

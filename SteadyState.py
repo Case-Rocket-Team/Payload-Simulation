@@ -38,4 +38,4 @@ class SteadyState:
         parafoil_state['Altitude'] += h_velocity * dt
         #parafoil_state['Azimuth Angle'] += self.calcTurningVelocity() * dt
         if parafoil_state['Altitude'] < 0:
-            print("Downwind (x) Velocity: ", x_velocity, "Crosswind (y) Velocity: ", y_velocity, "Vertical Velocity: ", h_velocity, "Velocity: ", parafoil_state['Velocity'], "Glide Angle: ", parafoil_state['Glide Angle'])
+            print("Downwind (x) Velocity: ", x_velocity, "Crosswind (y) Velocity: ", y_velocity, "Vertical Velocity: ", h_velocity, "Velocity: ", parafoil_state['Velocity'], "Glide Angle: ", parafoil_state['Glide Angle'], "Glide Ratio: ", 1400 / parafoil_state['X-position'])
