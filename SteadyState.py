@@ -39,3 +39,22 @@ class SteadyState:
         #parafoil_state['Azimuth Angle'] += self.calcTurningVelocity() * dt
         if parafoil_state['Altitude'] < 0:
             print("Downwind (x) Velocity: ", x_velocity, "Crosswind (y) Velocity: ", y_velocity, "Vertical Velocity: ", h_velocity, "Velocity: ", parafoil_state['Velocity'], "Glide Angle: ", parafoil_state['Glide Angle'], "Glide Ratio: ", 1400 / parafoil_state['X-position'])
+
+    def runLoop(self, parafoil, parafoil_state, dt):
+        time = 0
+        times = [0]
+        angles = [0]
+        x_positions = [parafoil_state["X-position"]]
+        y_positions = [parafoil_state["Y-position"]]
+        altitudes = [parafoil_state['Altitude']]
+        # Run loop that iterates the kinematic steady state equations
+        while parafoil_state['Altitude'] > 0:
+            self.updatePosition(parafoil, parafoil_state, dt)
+            time += dt
+            times.append(time)
+            angles.append(parafoil_state['Glide Angle'])
+            x_positions.append(parafoil_state['X-position'])
+            y_positions.append(parafoil_state['Y-position'])
+            altitudes.append(parafoil_state['Altitude'])
+        print("^^^Time is: ", time, "Position is (x,y,z): (", parafoil_state['X-position'], ", ", parafoil_state['Y-position'], ", ", parafoil_state['Altitude'], ")")
+        return x_positions, y_positions, altitudes, angles, times

@@ -1,4 +1,5 @@
 import math
+from ControlLogic import ControlLogic
 g = 9.81
 density = 1.225
 class UnsteadyState:
@@ -46,3 +47,37 @@ class UnsteadyState:
             unsteady_parafoil_state['Azimuth Angle'] = unsteady_parafoil_state['Azimuth Angle'] - 360
         if unsteady_parafoil_state['Altitude'] < 0:
             print("Downwind (x) Velocity: ", x_velocity, "m/s, Crosswind (y) Velocity: ", y_velocity, "m/s, Vertical Velocity: ", z_velocity, "m/s, Overall Velocity: ", unsteady_parafoil_state['Velocity'], "m/s, Glide Angle", unsteady_parafoil_state['Glide Angle'], "degrees, Azimuth Angle: ", unsteady_parafoil_state['Azimuth Angle'], "degrees, Turning Rate: ", turning_rate, "degrees/s")
+
+    def runLoop(self, parafoil, parafoil_state, unsteady_parafoil_state, target, kp, dt):
+        ctrl = ControlLogic()
+        unsteady_parafoil_state['Velocity'] = parafoil_state['Velocity']
+        unsteady_parafoil_state['Glide Angle'] = parafoil_state['Glide Angle']
+        unsteady_times = [0]
+        unsteady_angles = [0]
+        unsteady_x_positions = [unsteady_parafoil_state['X-position']]
+        unsteady_y_positions = [unsteady_parafoil_state['Y-position']]
+        unsteady_altitudes = [unsteady_parafoil_state['Altitude']]
+        unsteady_azimuths = [unsteady_parafoil_state['Azimuth Angle']]
+        unsteady_time = 0
+        deltas = []
+        targ_angle = ctrl.calcTargAngle(target)
+        ctrl.calcAzimuthDelta(unsteady_parafoil_state, targ_angle, deltas)
+        # Set up P controller with the process variable being the delta angle between the azimuth heading the the target, the manipulated variable being the assymetric flap deflection
+        pcontroller = ctrl.proportionalController(kp, 0)
+        pcontroller.send(None)
+        # Run loop that iterates the kinematic unsteady state equations
+        while unsteady_parafoil_state['Altitude'] > 0:
+            #print("Time is: ", unsteady_time)
+            self.updatePosition(parafoil, unsteady_parafoil_state, dt)
+            deflection = pcontroller.send(ctrl.calcAzimuthDelta(unsteady_parafoil_state, targ_angle, deltas))
+            unsteady_parafoil_state['Bank Angle'] = ctrl.convertDeflectToBankAngle(parafoil, unsteady_parafoil_state, deflection)
+            unsteady_time += dt
+            unsteady_times.append(unsteady_time)
+            unsteady_azimuths.append(unsteady_parafoil_state['Azimuth Angle'])
+            unsteady_angles.append(unsteady_parafoil_state['Glide Angle'])
+            unsteady_x_positions.append(unsteady_parafoil_state['X-position'])
+            unsteady_y_positions.append(unsteady_parafoil_state['Y-position'])
+            unsteady_altitudes.append(unsteady_parafoil_state['Altitude'])
+        pcontroller.close()
+        print("^^^Time is: ", unsteady_time, "Position is (x,y,z): (", unsteady_parafoil_state['X-position'], ", ", unsteady_parafoil_state['Y-position'], ", ", unsteady_parafoil_state['Altitude'], ")")
+        return unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths
