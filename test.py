@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 #position in meters
 glidePathAngle = -0.0
 
-# v in m/s
+# v in m/s    
 vx = 0.1
 vy = 0.1
 vz = 0.1
@@ -27,12 +27,12 @@ dt = 0.1
 
 # coef of lift/drag
 CL = 0.8
-CD = 0.1
+CD = 0.2
 CT = math.sqrt(CD*CD + CL*CL)
 # 4kg(payload) + 0.5kg (parafoil)
 W = 9.8*(4 + 0.5)
 # density kg/m^3
-#p = 1.225 
+po = 1.225
 # Area m^2
 A = 0.72
 
@@ -43,12 +43,31 @@ vT = 0
 # angle heading
 heading = 0.0
     
-po = 1.225 #kg/m^2
+p = 1.225 #kg/m^2
 R = 8.31446261815324  #  m3⋅Pa⋅K−1⋅mol−1(edited)
 T = 21+273.15 #K
 M = 0.0289647 #g/mol(edited)
 g = 9.8 #m/s^2
 8.31446261815324   # kg⋅m2·K−1⋅mol−1s−2
+
+parafoil = {
+    'Canopy Area' : 0.5,            # m^2
+    'Canopy Mass' : 0.0894,         # kg
+    'Payload Mass' : 4,             # kg
+    'Coffecient of Drag' : 0.18,
+    'Coeffecient of Lift' : 0.84,
+}
+# State of the vehicle
+parafoil_state = {
+    'X-position' : 0,               # m
+    'Y-position' : 0,               # m 
+    'Altitude' : 1400,              # m
+    'Glide Angle' : -12,          # degrees
+    'Bank Angle' : 0,               # degrees
+    'Azimuth Angle' : 0,            # degrees from x-axis
+    'Velocity' : 11.14,             # m/s
+}
+
 def getAirDensity(altitude):
     rho = po*math.exp((-g*M*altitude)/(R*T))
     return rho
@@ -63,10 +82,11 @@ def calculateDrag(vel, p):
     return 0.5*p*vel*vel*A*CD
 
 def calculateEquilibriumGlideAngle(vel, p):
-    return 1/math.atan(-calculateDrag(vel, p) / calculateLift(vel, p))
+    return math.atan(-calculateDrag(vel, p) / calculateLift(vel, p))
 
 def calculateGlideAngle(bankAngle, vel, p):
-    return 1/math.atan(-calculateDrag(vel, p)/(calculateLift(vel, p)*math.cos(bankAngle)))
+    #return 1/math.atan(-calculateDrag(vel, p)/(calculateLift(vel, p)*math.cos(bankAngle)))
+    return math.atan(math.tan(calculateEquilibriumGlideAngle(vel, p))/math.cos(bankAngle))
 
 def calculateEquilibriumVelocity(alt, v0, h0):
     airPressureRatio = getAirDensity(h0)/getAirDensity(alt)
@@ -75,9 +95,13 @@ def calculateEquilibriumVelocity(alt, v0, h0):
 def calculateVelocity(equiVel, glideAngle, equiGlideAngle, bankAngle):
     num = equiVel*equiVel * math.cos(glideAngle)
     denom = math.cos(equiGlideAngle) * math.cos(bankAngle)
-    return math.sqrt((num/denom))
+    print('num:', num,'denom: ', denom, 'glideAngle:' , glideAngle, 'equil glide Angle: ', equiGlideAngle)
+    if(num/denom > 0):
+        return math.sqrt((num/denom))
+    else:
+        return 0
 
-def calculateTurningAccel(velocity, bankAngle, glideAngle):
+def calculateTurningVel(velocity, bankAngle, glideAngle):
     return -9.81*math.tan(bankAngle)/(velocity*velocity*math.sin(glideAngle))
 
 def calculateXVel(velocity, turnRate, glideAngle):
@@ -86,25 +110,25 @@ def calculateXVel(velocity, turnRate, glideAngle):
 def calculateYVel(velocity, turnRate, glideAngle):
     return velocity * math.sin(turnRate)*math.cos(glideAngle)
 
-def calculateAltitude(vel, glideAngle):
+def calculateAltitudeVel(vel, glideAngle):
     return vel*math.sin(glideAngle)
 
 def quasiSteadyStateEstimation():
     px = 0
     py = 0
-    pz = 3200
+    pz = 1400
     pxy = 0
     time = 0
     bankAngle = 0
     turningRate = 0
-    azimuthAngle = 0.5
+    azimuthAngle = 0.0
     lastVelocity = initialVelocity
     coordsT = []
     coordsX = []
     coordsZ = []
     coordsY = []
     coordsRho = []
-    while (pz > 0 or pz > 2000):
+    while (pz > 0 and pz < 4000):
 
         p = getAirDensity(pz)
         L = calculateLift(lastVelocity, p)
@@ -113,27 +137,20 @@ def quasiSteadyStateEstimation():
         GlideAngle = calculateGlideAngle(bankAngle, lastVelocity, p)
         EquilibriumVelocity = calculateEquilibriumVelocity(pz, initialVelocity, 0)
         velocity = calculateVelocity(EquilibriumVelocity, GlideAngle, EquilibtriumGlideAngle, bankAngle)
-        turningAccel = calculateTurningAccel(velocity, bankAngle, GlideAngle)
-        
-        if(time > 10 and time < 20): 
-            bankAngle = 0.05
-        else:
-            if(time > 20):
-                bankAngle = -0.05
-            else:
-                bankAngle = 0
+        turningRate = calculateTurningVel(velocity, bankAngle, GlideAngle)
+        #print(turningRate)
 
-        turningRate += turningAccel*dt
         azimuthAngle += turningRate*dt
         px += calculateXVel(velocity, azimuthAngle, GlideAngle)*dt
         py += calculateYVel(velocity, azimuthAngle, GlideAngle)*dt
-        pz += calculateAltitude(velocity, GlideAngle)* dt
+        pz += calculateAltitudeVel(velocity, GlideAngle)* dt
         time += dt
         coordsT.append(time)
         coordsX.append(px)
         coordsY.append(py)
         coordsZ.append(pz)
-        printCoords(time, px, py, pz, glidePathAngle)
+        coordsRho.append(p)
+        printCoords(time, px, py, pz, turningRate)
 
 
         lastVelocity = velocity
@@ -141,6 +158,15 @@ def quasiSteadyStateEstimation():
     fig = plt.figure()
     ax = fig.add_subplot(111, projection = '3d')
     ax.plot(coordsX, coordsY,coordsZ)
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot()
+    ax2.plot(coordsZ, coordsRho)
+
+    ax2.set_xlabel(r'Altitude - Z (m)', fontsize = 15)
+    ax2.set_ylabel(r'Air Density(kg/m^3)', fontsize = 15)
+    ax2.set_title('Air Density Estimation')
+    ax2.grid(True)
+
 
     ax.set_xlabel(r'Down Range - X (m)', fontsize = 15)
     ax.set_ylabel(r'Cross-Range - Y (m)', fontsize = 15)
@@ -190,24 +216,17 @@ def steadyStateEstimation():
         coordsZ.append(pz)
         #coordsRho.append(p)
     
-    #fig2 = plt.figure()
-    #ax2 = fig2.add_subplot()
+    #graph printouts
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection = '3d')
     ax.plot(coordsX, coordsY,coordsZ)
-   # ax2.scatter(coordsZ, coordsRho)
 
     ax.set_xlabel(r'Down Range (m)', fontsize = 15)
-    ax.set_ylabel(r'Cross-Range (m)', fontsize = 15)
+    ax.set_ylabel(r'Cross-Range (m)', fontsize = 15) 
     ax.set_zlabel(r'Altitude (m)', fontsize = 15)
     ax.set_title('3D position graph')
     ax.grid(True)
-
-    #ax2.set_xlabel(r'Altitude(meters)', fontsize = 15)
-    #ax2.set_ylabel(r'Air denity(Kg/m^3)', fontsize = 15)
-    #ax2.set_title('Air density vs altitude')
-    #ax2.grid(True)
 
     plt.show()
 
