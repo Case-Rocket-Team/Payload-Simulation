@@ -1,34 +1,32 @@
 import math
+import numpy as np
 g = 9.81
 class ControlLogic:
-    def proportionalController(self, kp, sp):
-        mv = 0
-        while True:
-            pv = yield mv
-            mv = kp * (sp - pv)
+    # def proportionalController(self, kp, sp):
+    #     mv = 0
+    #     while True:
+    #         pv = yield mv
+    #         mv = kp * (sp - pv)
 
-    # Returns angle of target off of x-axis in degrees
-    def calcTargAngle(self, target):
-        if target[0] != 0:
-            targ_angle = math.degrees(math.atan(target[1] / target[0]))
-        elif target[0] == 0:
-            if target[1] > 0:
-                targ_angle = 0
-            elif target[1] < 0:
-                targ_angle = 180
-        if targ_angle < 0:
-            targ_angle += 360
-        return targ_angle
-
-    # Calculates delta angle between payload heading and target angle
-    def calcAzimuthDelta(self, unsteady_parafoil_state, targ_angle, deltas):
-        delta = math.radians(unsteady_parafoil_state['Azimuth Angle'] - targ_angle)
-        deltas.append(math.degrees(delta))
-        return delta
+    # Calculates delta angle between payload heading and target
+    def calcAzimuthDelta(self, unsteady_parafoil_state, target, deltas):
+        targ = [target[0] - unsteady_parafoil_state['X-position'], target[1] - unsteady_parafoil_state['Y-position'], 0]
+        vehicle = [math.cos(math.radians(unsteady_parafoil_state['Azimuth Angle'])), math.sin(math.radians(unsteady_parafoil_state['Azimuth Angle'])), 0]
+        mag = math.sqrt(targ[0] ** 2 + targ[1] ** 2)
+        dot = np.dot(vehicle, targ)
+        cross = np.cross(vehicle, targ)
+        delta = math.degrees(math.acos(dot / mag))
+        if cross[2] < 0:
+            deltas.append(-1 * delta)
+            return -1 * delta
+        elif cross[2] > 0:
+            deltas.append(delta)
+            return delta
     
-    def convertDeflectToBankAngle(self, parafoil, parafoil_state, deflect_angle):
-        turn_rate = 0.625 * parafoil_state['Velocity'] / parafoil["Span"] * deflect_angle 
-        return parafoil_state['Velocity'] * turn_rate / g
+
+    # def convertDeflectToBankAngle(self, parafoil, parafoil_state, deflect_angle):
+    #     turn_rate = 0.625 * parafoil_state['Velocity'] / parafoil["Span"] * math.radians(deflect_angle)
+    #     return parafoil_state['Velocity'] * turn_rate / g
 
     # def convertDeflectToServo(self):
     #     spool_d = 0.5 #in Spool Diameter

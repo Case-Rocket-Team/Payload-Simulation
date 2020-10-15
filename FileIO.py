@@ -30,6 +30,9 @@ class FileIO:
     def userPrompt(self):
         check = input("Use built in parafoil data (n) or load parafoil data from json (l)? ")
         return check
+    def controlPrompt(self):
+        check = input("Use P controller (y/n)? ")
+        return check
 
     def runUI(self, parafoil_baked, parafoil_state):
         check = self.userPrompt()
@@ -37,9 +40,9 @@ class FileIO:
             parafoil = self.jsonFileRead()
             self.massPick(parafoil, parafoil_baked)
             self.parafoilStateInput(parafoil_state)
-            return parafoil
+            return parafoil, self.controlPrompt()
         elif check == "n":
             parafoil = copy.deepcopy(parafoil_baked)
-            return parafoil
+            return parafoil, self.controlPrompt()
         else:
             print("The hell's wrong with you?")
