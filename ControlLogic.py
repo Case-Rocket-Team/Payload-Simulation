@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from util import util
 g = 9.81
 class ControlLogic:
     # def proportionalController(self, kp, sp):
@@ -15,6 +16,7 @@ class ControlLogic:
         mag = math.sqrt(targ[0] ** 2 + targ[1] ** 2)
         dot = np.dot(vehicle, targ)
         cross = np.cross(vehicle, targ)
+        dot = util.clamp(dot, abs(mag), -abs(mag))
         delta = math.degrees(math.acos(dot / mag))
         if cross[2] < 0:
             deltas.append(-1 * delta)
@@ -23,7 +25,6 @@ class ControlLogic:
             deltas.append(delta)
             return delta
     
-
     # def convertDeflectToBankAngle(self, parafoil, parafoil_state, deflect_angle):
     #     turn_rate = 0.625 * parafoil_state['Velocity'] / parafoil["Span"] * math.radians(deflect_angle)
     #     return parafoil_state['Velocity'] * turn_rate / g
