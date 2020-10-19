@@ -53,7 +53,6 @@ def main():
         kp = 0.25
         unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles = unsteady.runControlLoop(parafoil, parafoil_state, unsteady_parafoil_state, target, kp, dt)
         
-
         # plt.plot(x_positions, altitudes, label = "Steady State")
         # plt.plot(unsteady_x_positions, unsteady_altitudes, label = "Unsteady State")
         # plt.xlabel("Downrange Distance (m)")
