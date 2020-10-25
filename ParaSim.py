@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from SteadyState import SteadyState
 from UnsteadyState import UnsteadyState
 from FileIO import FileIO
+from ApogeeTest import ApogeeTest
+from Graphing import Graphing
 g = 9.81
 density = 1.225
 # Defined Constants for our parafoil
@@ -21,184 +23,88 @@ parafoil_baked = {
 }
 # State of the vehicle
 parafoil_state = {
-    'X-position' : 0,               # m
-    'Y-position' : 0,               # m 
-    'Altitude' : 1400,              # m
-    'Glide Angle' : -14,            # degrees
-    'Bank Angle' : -1,               # degrees
-    'Azimuth Angle' : 0,            # degrees from x-axis
-    'Velocity' : 10.95,             # m/s
+    'X-position' : 0,                   # m
+    'Y-position' : 0,                   # m 
+    'Altitude' : 1400,                  # m
+    'Glide Angle' : -23.3,              # degrees
+    'Bank Angle' : 0,                   # degrees
+    'Azimuth Angle' : 180,              # degrees from x-axis
+    'Velocity' : 10.95,                 # m/s
     'Wind Field': [0, 0, 0],
 }
-target = (3000,3000)      # (x,y)
+
+# (x,y)
+target = (0,0)
+
 def main():
-    #steady = SteadyState()
+    # Call classes
+    apo = ApogeeTest()
+    # steady = SteadyState()
     unsteady = UnsteadyState()
     fio = FileIO()
     # Prompt user to determine whether to use built in data or change to file and user input
-    parafoil, control_prompt = fio.runUI(parafoil_baked, parafoil_state)
+    parafoil, control_prompt, ctrl_check = fio.runUI(parafoil_baked, parafoil_state)
+
     # Create a copy of the vehicle state for the unsteady state equations
     base_parafoil_state = copy.deepcopy(parafoil_state)
+
     dt = 0.1
-    #x_positions, y_positions, altitudes, angles, times = steady.runLoop(parafoil, parafoil_state, dt)
     if control_prompt == 'y':
-        # Proportional Gain constant
-        kp = [0.05, 0.25, 0.5, 1.0]
-        kd, ki = 0, 0
-        col = ["b","g","r","c","m","y"]
-        #print("KP length", len(kp))
-        #print("col", len(kp))
+        # Return to Pad approach with random start points
+        if ctrl_check == 'r':
+            # Proportional Gain constants, integral gain, derivative gain
+            kp1, kp2, ki, kd = 1, 1, 0, 0
 
-        unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles = [0] * len(kp), [0] * len(kp), [0] * len(kp), [0] * len(kp), [0] * len(kp), [0] * len(kp),  [0] * len(kp), [0] * len(kp)
-        #unsteady_parafoil_state = copy.deepcopy(base_parafoil_state)
-        for i in range(0, len(kp)-1):
+            apogees = apo.createApogeeArray(parafoil_state, 1)
+            graph = Graphing(len(apogees))
+
+            unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, step_time, step, left_servo_angles, right_servo_angles, deflections = [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees),  [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees)
+
+            for i in range(0, len(apogees)):
+                unsteady_parafoil_state = copy.deepcopy(base_parafoil_state)
+                unsteady_parafoil_state['X-position'] = apogees[i][0]
+                unsteady_parafoil_state['Y-position'] = apogees[i][1]
+                unsteady_parafoil_state['Altitude'] = apogees[i][2]
+                unsteady_parafoil_state['Azimuth Angle'] = apogees[i][3]
+                unsteady_x_positions[i], unsteady_y_positions[i], unsteady_altitudes[i], unsteady_angles[i], unsteady_times[i], deltas[i], unsteady_azimuths[i], unsteady_bank_angles[i], step_time[i], step[i], left_servo_angles[i], right_servo_angles[i], deflections[i] = unsteady.runCircularControlLoop(parafoil, parafoil_state, unsteady_parafoil_state, target, kp1, kp2, kd, ki, dt)
+
+            hits = 0
+            for i in range(0, len(apogees)):
+                listSize = len(unsteady_x_positions[i])-1
+                if math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2)) < 10:
+                    hits += 1
+                print("Apogee: ",apogees[i], " Distance From Target:" + str(math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2))))
+            print(hits, " hits out of ", len(apogees))
+
+            graph.varying_apogee_graphing(apogees, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, step_time, step, left_servo_angles, right_servo_angles, deflections)
+
+        # Straight approach with varying kp
+        if ctrl_check == 's':
+            # Proportional Gain constant
+            kp = [1.25]
+            kd, ki = 0, 0
+
+            graph = Graphing(len(kp))
+
+            unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections = [0] * len(kp), [0] * len(kp), [0] * len(kp), [0] * len(kp), [0] * len(kp), [0] * len(kp),  [0] * len(kp), [0] * len(kp),  [0] * len(kp), [0] * len(kp), [0] * len(kp)
             unsteady_parafoil_state = copy.deepcopy(base_parafoil_state)
-            print(i)
-            unsteady_x_positions[i], unsteady_y_positions[i], unsteady_altitudes[i], unsteady_angles[i], unsteady_times[i], deltas[i], unsteady_azimuths[i], unsteady_bank_angles[i] = unsteady.runControlLoop(parafoil, parafoil_state, unsteady_parafoil_state, target, kp[i], kd, ki, dt)
-       
-        #unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles = unsteady.runControlLoop(parafoil, parafoil_state, unsteady_parafoil_state, target, kp, kd, ki, dt)
-        
-        # plt.plot(x_positions, altitudes, label = "Steady State")
-        # plt.plot(unsteady_x_positions, unsteady_altitudes, label = "Unsteady State")
-        # plt.xlabel("Downrange Distance (m)")
-        # plt.ylabel("Altitude (m)")
-        # plt.title("Altitude and Downrange Distance")
-        # plt.legend()
+            
+            for i in range(0, len(kp)):
+                unsteady_parafoil_state = copy.deepcopy(base_parafoil_state)
+                print(i)
+                unsteady_x_positions[i], unsteady_y_positions[i], unsteady_altitudes[i], unsteady_angles[i], unsteady_times[i], deltas[i], unsteady_azimuths[i], unsteady_bank_angles[i], left_servo_angles[i], right_servo_angles[i], deflections[i] = unsteady.runStraightControlLoop(parafoil, parafoil_state, unsteady_parafoil_state, target, kp[i], kd, ki, dt)
+            
+            for i in range(0, len(kp)):
+                listSize = len(unsteady_x_positions[i])-1
+                print("KP: " + str(kp[i]) + " Distance From Target:" + str(math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2))))
 
-        # plt.figure()
-        # plt.plot(times, altitudes, label = "Steady State")
-        # plt.plot(unsteady_times, unsteady_altitudes, label = "Unsteady State")
-        # plt.xlabel("Time (s)")
-        # plt.ylabel("Altitude (m)")
-        # plt.title("Altitude vs Time")
-        # plt.legend()
-
-        for i in range(0, len(kp)-1):
-            listSize = len(unsteady_x_positions[i])-1
-            print("KP: " + str(kp) + " Distance From Target:" + str(math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2))))
-
-        plt.figure()
-        for i in range(0, len(kp) - 1):
-            plt.plot(unsteady_x_positions[i], unsteady_y_positions[i], label = "Unsteady State, kp:" + str(kp[i]), c = col[i])
-
-        #plt.plot(unsteady_x_positions, unsteady_y_positions, label = "Unsteady State, kp:" + str(kp) + "kd:" + str(kd) + "ki:" + str(ki))
-        plt.scatter(target[0], target [1], c = "r", s = 10)
-        plt.xlabel("X-position (m)")
-        plt.ylabel("Y-position (m)")
-        plt.title("X-position vs Y-position")
-        plt.axis('square')
-        plt.legend()
-
-        plt.figure()
-        for i in range(0, len(kp) - 1):
-            plt.plot(unsteady_times[i], unsteady_azimuths[i], label = "Unsteady State, kp:" + str(kp[i]), c = col[i])
-        plt.xlabel("Time (s)")
-        plt.ylabel("Azimuth Angle")
-        plt.title("Azimuth vs Time")
-        plt.legend()
-
-        plt.figure()
-        for i in range(0, len(kp) - 1):
-             plt.plot(unsteady_times[i], unsteady_bank_angles[i], label = "Unsteady State, kp:" + str(kp[i]), c = col[i])
-        #plt.plot(unsteady_times, unsteady_bank_angles, label = "Unsteady State, kp:" + str(kp))
-        plt.xlabel("Time (s)")
-        plt.ylabel("Bank Angle (deg)")
-        plt.title("Bank Angle vs Time")
-        plt.legend()
-
-        plt.figure()
-        for i in range(0, len(kp) - 1):
-            plt.plot(unsteady_times[i], deltas[i], label = "Unsteady State, kp:" + str(kp[i]), c = col[i])
-        #plt.plot(unsteady_times, deltas, label = "Unsteady State, kp:" + str(kp))
-        #plt.plot([0,unsteady_times[-1]], [0,0], label = "Setpoint", c = "r")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Delta from Azimuth")
-        plt.title("Delta vs Time")
-        plt.legend()
-
-        '''
-        plt.figure()
-        plt.plot(times, angles, label = "Steady State")
-        plt.plot(unsteady_times, unsteady_angles, label = "Unsteady State")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Angle of Flight")
-        plt.title("Glide Angle vs Time")
-        plt.legend()
-        '''
-        '''
-        fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
-        ax.plot(x_positions, y_positions, altitudes, c = 'Blue', label = "Steady State")
-        '''
-        fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
-        for i in range(0, len(kp) - 1):
-            ax.plot(unsteady_x_positions[i], unsteady_y_positions[i], unsteady_altitudes[i], c = col[i], label = "Unsteady State, kp:" + str(kp[i]))
-        #ax.plot(unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, label = "Unsteady State, kp:" + str(kp))
-        ax.scatter(target[0], target[1], 0, c = 'Red', label = "Target", s = 10)
-        ax.set_title("Parafoil Path with a P Controller")
-        ax.set_xlabel("Downwind X (m)")
-        ax.set_ylabel("Crosswind Y (m)")
-        ax.set_zlabel("Altitude Z (m)")
-        ax.legend()
-        plt.show()
+            graph.varying_gain_graphing(kp, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections)
 
     elif control_prompt == 'n':
+        graph = Graphing(1)
         unsteady_parafoil_state = copy.deepcopy(base_parafoil_state)
         unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths = unsteady.runLoop(parafoil, parafoil_state, unsteady_parafoil_state, target, dt)
-        # plt.plot(x_positions, altitudes, label = "Steady State")
-        # plt.plot(unsteady_x_positions, unsteady_altitudes, label = "Unsteady State")
-        # plt.xlabel("Downrange Distance (m)")
-        # plt.ylabel("Altitude (m)")
-        # plt.title("Altitude and Downrange Distance")
-        # plt.legend()
-
-        # plt.figure()
-        # plt.plot(times, altitudes, label = "Steady State")
-        # plt.plot(unsteady_times, unsteady_altitudes, label = "Unsteady State")
-        # plt.xlabel("Time (s)")
-        # plt.ylabel("Altitude (m)")
-        # plt.title("Altitude vs Time")
-        # plt.legend()
-
-        plt.figure()
-        plt.plot(unsteady_x_positions, unsteady_y_positions, label = "Unsteady State", c = "b")
-        plt.scatter(target[0], target [1], c = "r", label = "Target", s = 10)
-        plt.xlabel("X-position (m)")
-        plt.ylabel("Y-position (m)")
-        plt.title("X-position vs Y-position")
-        plt.legend()
-
-        plt.figure()
-        plt.plot(unsteady_times, unsteady_azimuths, label = "Unsteady State", c = "b")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Azimuth Angle (deg)")
-        plt.title("Azimuth vs Time")
-        plt.legend()
-
-        plt.figure()
-        plt.plot(unsteady_times, deltas, label = "Unsteady State", c = "b")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Delta from Azimuth (deg)")
-        plt.title("Delta vs Time")
-        plt.legend()
-
-        # plt.figure()
-        # plt.plot(times, angles, label = "Steady State")
-        # plt.plot(unsteady_times, unsteady_angles, label = "Unsteady State")
-        # plt.xlabel("Time (s)")
-        # plt.ylabel("Angle of Flight")
-        # plt.title("Glide Angle vs Time")
-        # plt.legend()
-
-        fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
-        #ax.plot(x_positions, y_positions, altitudes, c = 'Blue', label = "Steady State")
-        ax.plot(unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, c = "b", label = "Unsteady State")
-        ax.scatter(target[0], target[1], 0, c = 'Red', label = "Target", s = 10)
-        ax.set_title("Parafoil Path")
-        ax.set_xlabel("Downwind X (m)")
-        ax.set_ylabel("Crosswind Y (m)")
-        ax.set_zlabel("Altitude Z (m)")
-        ax.legend()
-        plt.show()    
+        graph.uncontrolled_graphing(target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths)
 
 
 if __name__ == "__main__":
