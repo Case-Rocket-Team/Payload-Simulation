@@ -1,8 +1,11 @@
 import math
 import numpy as np
 from util import util
-g = 9.81
+
 class ControlCalculations:
+    def __init__(self):
+        self.g = 9.81
+
     # Calculates the angle delta between the heading of the vehicle and the target distance vector
     # Also assigns +/- to the angle with positive (+) left and negative (-) right
     def calcAzimuthDelta(self, unsteady_parafoil_state, target, deltas):
@@ -30,7 +33,7 @@ class ControlCalculations:
 
     # Converts bank angle of vehicle into deflection angle of wing
     def convertBankAngleToDeflect(self, parafoil, unsteady_parafoil_state):
-        turn_rate = math.sin(math.radians(unsteady_parafoil_state['Bank Angle'])) * g / (unsteady_parafoil_state['Velocity'] * math.cos(math.radians(unsteady_parafoil_state['Glide Angle'])))
+        turn_rate = math.sin(math.radians(unsteady_parafoil_state['Bank Angle'])) * self.g / (unsteady_parafoil_state['Velocity'] * math.cos(math.radians(unsteady_parafoil_state['Glide Angle'])))
         deflect_angle = math.degrees(turn_rate / 0.625 / unsteady_parafoil_state['Velocity'] * parafoil['Span'])
         return deflect_angle
 

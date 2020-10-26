@@ -3,26 +3,47 @@ import numpy as np
 from ControlCalculations import ControlCalculations
 from PIDController import PIDController
 from util import util 
-g = 9.81
-density = 1.225
+
 class UnsteadyState:
+    def __init__(self):
+        self.density = 1.225
+        self.g = 9.81
     # Calculate total velocity magnitude
     def calcVelocity(self, parafoil, unsteady_parafoil_state, lift_force, drag_force, dt):
-        weight = (parafoil['Payload Mass'] + parafoil['Canopy Mass']) * g
+        weight = (parafoil['Payload Mass'] + parafoil['Canopy Mass']) * self.g
         acceleration = -((drag_force + weight * math.sin(math.radians(unsteady_parafoil_state['Glide Angle']))) / (parafoil['Payload Mass'] + parafoil['Canopy Mass']))
         unsteady_parafoil_state['Velocity'] += acceleration * dt
-    
+
+    airConditions = {
+        #constants
+        'MolarMass': 0.0289647,
+        'R': 8.31446261815324,
+        'T': 21+273.15,
+        'po': 1.225,
+        #variables
+        'p': 0
+    }
+
+    # Zach's air density updater, could be important for higher altitude flights
+    def getAirDensity(self, unsteady_parafoil_state):
+        M = self.airConditions['MolarMass']
+        R = self.airConditions['R']
+        T = self.airConditions['T']
+        po = self.airConditions['po']
+
+        self.density = po * math.exp((-9.8 * M * unsteady_parafoil_state['Altitude']) / (R * T))
+
     # Calculate Lift Force
     def calcLiftForce(self, parafoil, unsteady_parafoil_state):
-        return 0.5 * density * (unsteady_parafoil_state['Velocity'] ** 2) * (parafoil['Span'] * parafoil['Chord']) * parafoil['Vehicle Coefficients']['CL']
+        return 0.5 * self.density * (unsteady_parafoil_state['Velocity'] ** 2) * (parafoil['Span'] * parafoil['Chord']) * parafoil['Vehicle Coefficients']['CL']
     
     # Calculate Drag Force
     def calcDragForce(self, parafoil, unsteady_parafoil_state):
-        return 0.5 * density * (unsteady_parafoil_state['Velocity'] ** 2) * (parafoil['Span'] * parafoil['Chord']) * parafoil['Vehicle Coefficients']['CD']
+        return 0.5 * self.density * (unsteady_parafoil_state['Velocity'] ** 2) * (parafoil['Span'] * parafoil['Chord']) * parafoil['Vehicle Coefficients']['CD']
     
     # Calculate Glide Angle
     def calcGlideAngle(self, parafoil, unsteady_parafoil_state, lift_force, drag_force, dt):
-        weight = (parafoil['Payload Mass'] + parafoil['Canopy Mass']) * g
+        weight = (parafoil['Payload Mass'] + parafoil['Canopy Mass']) * self.g
         roc_glide_angle = (lift_force * math.cos(math.radians(unsteady_parafoil_state['Bank Angle'])) - (weight * math.cos(math.radians(unsteady_parafoil_state['Glide Angle'])))) / ((parafoil['Payload Mass'] + parafoil['Canopy Mass']) * unsteady_parafoil_state['Velocity'])
         unsteady_parafoil_state['Glide Angle'] += roc_glide_angle * dt
 
@@ -40,6 +61,7 @@ class UnsteadyState:
 
     # Kinematic update method
     def updatePosition(self, parafoil, unsteady_parafoil_state, dt):
+        self.getAirDensity(unsteady_parafoil_state)
         lift_force = self.calcLiftForce(parafoil, unsteady_parafoil_state)
         drag_force = self.calcDragForce(parafoil, unsteady_parafoil_state)
         self.calcGlideAngle(parafoil, unsteady_parafoil_state, lift_force, drag_force, dt)
