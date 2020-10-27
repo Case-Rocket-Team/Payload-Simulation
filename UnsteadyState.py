@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import copy
 from ControlCalculations import ControlCalculations
 from PIDController import PIDController
 from util import util 
@@ -78,8 +79,8 @@ class UnsteadyState:
         unsteady_parafoil_state['Azimuth Angle'] += turning_rate * dt
         self.fixAzimuth(unsteady_parafoil_state)
         # Prints vehicle info on final iteration
-        if unsteady_parafoil_state['Altitude'] < 0:
-            print("Downwind (x) Velocity: ", x_velocity, "m/s, Crosswind (y) Velocity: ", y_velocity, "m/s, Vertical Velocity: ", z_velocity, "m/s, Overall Velocity: ", unsteady_parafoil_state['Velocity'], "m/s, Glide Angle", unsteady_parafoil_state['Glide Angle'], "degrees, Azimuth Angle: ", unsteady_parafoil_state['Azimuth Angle'], "degrees, Turning Rate: ", turning_rate, "degrees/s")
+        # if unsteady_parafoil_state['Altitude'] < 0:
+        #     print("Downwind (x) Velocity: ", x_velocity, "m/s, Crosswind (y) Velocity: ", y_velocity, "m/s, Vertical Velocity: ", z_velocity, "m/s, Overall Velocity: ", unsteady_parafoil_state['Velocity'], "m/s, Glide Angle", unsteady_parafoil_state['Glide Angle'], "degrees, Azimuth Angle: ", unsteady_parafoil_state['Azimuth Angle'], "degrees, Turning Rate: ", turning_rate, "degrees/s")
 
     # Straight approach control loop
     def runStraightControlLoop(self, parafoil, parafoil_state, unsteady_parafoil_state, target, kp, kd, ki, dt):
@@ -122,10 +123,27 @@ class UnsteadyState:
             unsteady_x_positions.append(unsteady_parafoil_state['X-position'])
             unsteady_y_positions.append(unsteady_parafoil_state['Y-position'])
             unsteady_altitudes.append(unsteady_parafoil_state['Altitude'])
-            #print(unsteady_parafoil_state['X-position'], ", ", unsteady_parafoil_state['Y-position'], ", ", unsteady_parafoil_state['Altitude'])
-        # pcontroller.close()
-        print("^^^Time is: ", unsteady_time, "Position is (x,y,z): (", unsteady_parafoil_state['X-position'], ", ", unsteady_parafoil_state['Y-position'], ", ", unsteady_parafoil_state['Altitude'], ")")
+        # print("^^^Time is: ", unsteady_time, "Position is (x,y,z): (", unsteady_parafoil_state['X-position'], ", ", unsteady_parafoil_state['Y-position'], ", ", unsteady_parafoil_state['Altitude'], ")")
         return unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections
+
+    # Simulated straight approach control loop
+    def runSimStraightControlLoop(self, parafoil, unsteady_parafoil_state, target, kp, kd, ki, dt):
+        ctrl = ControlCalculations()
+        deltas = []
+        sim_parafoil_state = copy.deepcopy(unsteady_parafoil_state)
+        ctrl.calcAzimuthDelta(unsteady_parafoil_state, target, deltas)
+        # Set up P controller with the process variable being the delta angle between the azimuth heading the the target, the manipulated variable being the assymetric flap deflection
+        pid = PIDController(kp, kd, ki, 0)
+        # Run loop that iterates the kinematic unsteady state equations
+        while sim_parafoil_state['Altitude'] > 0:
+            self.updatePosition(parafoil, sim_parafoil_state, dt)
+            delta = ctrl.calcAzimuthDelta(sim_parafoil_state, target, deltas)
+            bank_angle = pid.calculate(delta, dt)
+            sim_parafoil_state['Bank Angle'] = util.clamp(bank_angle, 25, -25)
+        if math.sqrt(math.pow(sim_parafoil_state['X-position'] - target[0], 2) + math.pow(sim_parafoil_state['Y-position'] - target[1], 2)) <= 10:
+            return False
+        else:
+            return True
 
     # Return to Pad control loop
     def runCircularControlLoop(self, parafoil, parafoil_state, unsteady_parafoil_state, target, kp1, kp2, kd, ki, dt):
@@ -154,13 +172,15 @@ class UnsteadyState:
         elif delta_prime < 0:
             pid = PIDController(kp1, kd, ki, -90)
             step = -90
+        loop_check = True
+        call = 0
         # Run loop that iterates the kinematic unsteady state equations
         # First loop attempts to keep payload in a circle around the pad
-        while unsteady_parafoil_state['Altitude'] > ctrl.calcTargMag(unsteady_parafoil_state, target) * 0.49 and unsteady_parafoil_state['Altitude'] > 0:
-            #print("Time is: ", unsteady_time)
+        while loop_check and unsteady_parafoil_state['Altitude'] > 0:
             self.updatePosition(parafoil, unsteady_parafoil_state, dt)
             delta = ctrl.calcAzimuthDelta(unsteady_parafoil_state, target, deltas)
-            bank_angle = pid.calculate(delta, dt)
+            mag = ctrl.calcTargMag(unsteady_parafoil_state, target)
+            bank_angle= pid.calculate(delta, dt)
             unsteady_parafoil_state['Bank Angle'] = util.clamp(bank_angle, 25, -25)
             deflection_angle = ctrl.convertBankAngleToDeflect(parafoil, unsteady_parafoil_state)
             servo_angle = ctrl.convertDeflectToServo(parafoil, deflection_angle)
@@ -176,6 +196,12 @@ class UnsteadyState:
             unsteady_x_positions.append(unsteady_parafoil_state['X-position'])
             unsteady_y_positions.append(unsteady_parafoil_state['Y-position'])
             unsteady_altitudes.append(unsteady_parafoil_state['Altitude'])
+            if unsteady_parafoil_state['Altitude'] < ctrl.calcTargMag(unsteady_parafoil_state, target) * 0.6:
+                if call == 0:
+                    print("Altitude: " , unsteady_parafoil_state['Altitude'], "Distance to target", ctrl.calcTargMag(unsteady_parafoil_state, target))
+                    call += 1
+                loop_check = self.runSimStraightControlLoop(parafoil, unsteady_parafoil_state, target, kp2, kd, ki, dt)
+
         step_time = unsteady_time
         # Set up P controller with the process variable being the delta angle between the azimuth heading the the target, the manipulated variable being the vehicle bank angle
         pid = PIDController(kp2, kd, ki, 0)

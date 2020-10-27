@@ -30,7 +30,7 @@ parafoil_state = {
     'Bank Angle' : 0,                   # degrees
     'Azimuth Angle' : 180,              # degrees from x-axis
     'Velocity' : 10.95,                 # m/s
-    'Wind Field': [0, 0, 0],
+    'Wind Field': [3, 3, 0],
 }
 
 # (x,y)
@@ -53,7 +53,7 @@ def main():
         # Return to Pad approach with random start points
         if ctrl_check == 'r':
             # Proportional Gain constants, integral gain, derivative gain
-            kp1, kp2, ki, kd = 1, 1, 0, 0
+            kp1, kp2, ki, kd = 5, 1, 0.0001, 0
 
             apogees = apo.createApogeeArray(parafoil_state, 1)
             graph = Graphing(len(apogees))
@@ -61,6 +61,7 @@ def main():
             unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, step_time, step, left_servo_angles, right_servo_angles, deflections = [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees),  [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees)
 
             for i in range(0, len(apogees)):
+                print("Iteration ", i)
                 unsteady_parafoil_state = copy.deepcopy(base_parafoil_state)
                 unsteady_parafoil_state['X-position'] = apogees[i][0]
                 unsteady_parafoil_state['Y-position'] = apogees[i][1]

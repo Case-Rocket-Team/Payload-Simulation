@@ -4,7 +4,7 @@ class PIDController:
     accum = 0
     
     def __init__(self, kP, kI, kD, setpoint):
-        print("controller initialized w/ kp:" + str(kP) + ", KD:" + str(kD) + "ki"+str(kI))
+        # print("controller initialized w/ kp:" + str(kP) + ", KD:" + str(kD) + "ki"+str(kI))
         self.kP, self.kI, self.kD = kP, kI, kD
         self.setpoint = setpoint
         self.max, self.min = max, min

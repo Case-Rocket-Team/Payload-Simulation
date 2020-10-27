@@ -28,7 +28,7 @@ class FileIO:
         parafoil_state['Altitude'] = float(input("Enter starting altitude (meters): "))
 
     def userPrompt(self):
-        check = input("Use built in parafoil data (n) or load parafoil data from json (l)? ")
+        check = input("Load parafoil data from json file (l)? ")
         return check
     def controlPrompt(self):
         check = input("Use P controller (y/n)? ")

@@ -101,7 +101,7 @@ class Graphing:
 
         plt.figure()
         for i in range(0, len(apogees)):
-            plt.plot(unsteady_times[i][0:-20], deltas[i][0:-20], label = "Apogees: " + str(i), c = self.col[i])
+            plt.plot(unsteady_times[i], deltas[i], label = "Apogees: " + str(i), c = self.col[i])
         for i in range(0, len(apogees)):
             plt.plot([0, step_time[i], step_time[i], 300], [step[i], step[i], 0, 0], label = "Setpoint Step " + str(i), c = 'y')
         plt.xlabel("Time (s)")
