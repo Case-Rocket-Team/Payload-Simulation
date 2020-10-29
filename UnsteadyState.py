@@ -145,8 +145,41 @@ class UnsteadyState:
         else:
             return True
 
+    # Dist to Target control loop
+    def runDistToTargControlLoop(self, parafoil, parafoil_state, unsteady_parafoil_state, target, kp, ki, kd, dt):
+        ctrl = ControlCalculations()
+        unsteady_parafoil_state['Velocity'] = parafoil_state['Velocity']
+        unsteady_parafoil_state['Glide Angle'] = parafoil_state['Glide Angle']
+        unsteady_times = [0]
+        unsteady_angles = [0]
+        unsteady_x_positions = [unsteady_parafoil_state['X-position']]
+        unsteady_y_positions = [unsteady_parafoil_state['Y-position']]
+        unsteady_altitudes = [unsteady_parafoil_state['Altitude']]
+        unsteady_azimuths = [unsteady_parafoil_state['Azimuth Angle']]
+        unsteady_bank_angles = [unsteady_parafoil_state['Bank Angle']]
+        unsteady_mags = [ctrl.calcTargMag(unsteady_parafoil_state, target)]
+        unsteady_time = 0
+        pid = PIDController(kp, ki, kd, 150)
+        pid.setIntegralLimits(25, -25)
+        while unsteady_parafoil_state['Altitude'] > 0:
+            self.updatePosition(parafoil, unsteady_parafoil_state, dt)
+            targDist = ctrl.calcTargMag(unsteady_parafoil_state, target)
+            bank_angle = pid.calculate(targDist, dt)
+            unsteady_parafoil_state['Bank Angle'] = util.clamp(bank_angle, 25, -25)
+            unsteady_time += dt
+            unsteady_times.append(unsteady_time)
+            unsteady_bank_angles.append(unsteady_parafoil_state['Bank Angle'])
+            unsteady_azimuths.append(unsteady_parafoil_state['Azimuth Angle'])
+            unsteady_angles.append(unsteady_parafoil_state['Glide Angle'])
+            unsteady_x_positions.append(unsteady_parafoil_state['X-position'])
+            unsteady_y_positions.append(unsteady_parafoil_state['Y-position'])
+            unsteady_altitudes.append(unsteady_parafoil_state['Altitude'])
+            unsteady_mags.append(targDist)
+        print("Kp: ", kp, "Distance to Target: ", ctrl.calcTargMag(unsteady_parafoil_state, target), " m")
+        return unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, unsteady_azimuths, unsteady_bank_angles, unsteady_mags
+
     # Return to Pad control loop
-    def runCircularControlLoop(self, parafoil, parafoil_state, unsteady_parafoil_state, target, kp1, kp2, kd, ki, dt):
+    def runRTPControlLoop(self, parafoil, parafoil_state, unsteady_parafoil_state, target, kp1, kp2, ki1, ki2, kd1, kd2, dt):
         ctrl = ControlCalculations()
         unsteady_parafoil_state['Velocity'] = parafoil_state['Velocity']
         unsteady_parafoil_state['Glide Angle'] = parafoil_state['Glide Angle']
@@ -167,10 +200,10 @@ class UnsteadyState:
         # Set up P controller with the process variable being the delta angle between the azimuth heading the the target, the manipulated variable being the vehicle bank angle
         # Attempting to keep the vehicle circling the pad, so 90 deg angle b/w target dist vector and heading
         if delta_prime >= 0:
-            pid = PIDController(kp1, kd, ki, 90)
+            pid = PIDController(kp1, ki1, kd1, 90)
             step = 90
         elif delta_prime < 0:
-            pid = PIDController(kp1, kd, ki, -90)
+            pid = PIDController(kp1, ki1, kd1, -90)
             step = -90
         loop_check = True
         call = 0
@@ -200,11 +233,11 @@ class UnsteadyState:
                 if call == 0:
                     print("Altitude: " , unsteady_parafoil_state['Altitude'], "Distance to target", ctrl.calcTargMag(unsteady_parafoil_state, target))
                     call += 1
-                loop_check = self.runSimStraightControlLoop(parafoil, unsteady_parafoil_state, target, kp2, kd, ki, dt)
+                loop_check = self.runSimStraightControlLoop(parafoil, unsteady_parafoil_state, target, kp2, ki2, kd2, dt)
 
         step_time = unsteady_time
         # Set up P controller with the process variable being the delta angle between the azimuth heading the the target, the manipulated variable being the vehicle bank angle
-        pid = PIDController(kp2, kd, ki, 0)
+        pid = PIDController(kp2, ki2, kd2, 0)
         # Run loop that iterates the kinematic unsteady state equations
         # Second Loop turns out of the circle and approaches target
         while unsteady_parafoil_state['Altitude'] > 0:

@@ -32,7 +32,7 @@ class FileIO:
         return check
     def controlPrompt(self):
         check = input("Use P controller (y/n)? ")
-        ctrl_check = input("Use Return to Pad (r) or Straight Approach (s)?")
+        ctrl_check = input("Use Return to Pad (r), distance to pad control (d), or Straight Approach (s)?")
         return check, ctrl_check
 
     def runUI(self, parafoil_baked, parafoil_state):

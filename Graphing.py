@@ -122,7 +122,7 @@ class Graphing:
         plt.show()
 
     # Graphing call for running control with varying gains
-    def varying_gain_graphing(self, kp, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections):
+    def varying_gain_graphing(self, kp, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, unsteady_azimuths, unsteady_bank_angles, unsteady_mags):
         plt.figure()
         for i in range(0, len(kp)):
             plt.plot(unsteady_x_positions[i], unsteady_y_positions[i], label = "Unsteady State, kp:" + str(kp[i]), c = self.col[i])
@@ -143,23 +143,6 @@ class Graphing:
 
         plt.figure()
         for i in range(0, len(kp)):
-            plt.plot(unsteady_times[i], deflections[i], label = "Unsteady State, kp:" + str(kp[i]), c = self.col[i])
-        plt.xlabel("Time (s)")
-        plt.ylabel("Flap Deflection (deg)")
-        plt.title("Flap Deflection vs Time")
-        plt.legend()
-
-        plt.figure()
-        for i in range(0, len(kp)):
-            plt.plot(unsteady_times[i], left_servo_angles[i], label = "Left Servo kp:" + str(kp[i]), c = 'blue')
-            plt.plot(unsteady_times[i], right_servo_angles[i], label = "Right Servo kp:" + str(kp[i]), c = 'red')
-        plt.xlabel("Time (s)")
-        plt.ylabel("Angle (deg)")
-        plt.title("Servo Angle vs Time")
-        plt.legend()
-
-        plt.figure()
-        for i in range(0, len(kp)):
                 plt.plot(unsteady_times[i], unsteady_bank_angles[i], label = "Unsteady State, kp:" + str(kp[i]), c = self.col[i])
         plt.xlabel("Time (s)")
         plt.ylabel("Bank Angle (deg)")
@@ -168,11 +151,11 @@ class Graphing:
 
         plt.figure()
         for i in range(0, len(kp)):
-            plt.plot(unsteady_times[i], deltas[i], label = "Unsteady State, kp:" + str(kp[i]), c = self.col[i])
-        plt.plot([0,300], [0,0], label = "Setpoint", c = "y")
+            plt.plot(unsteady_times[i], unsteady_mags[i], label = "Unsteady State, kp:" + str(kp[i]), c = self.col[i])
+        plt.plot([0,300], [150,150], label = "Setpoint", c = "y")
         plt.xlabel("Time (s)")
-        plt.ylabel("Delta from Azimuth")
-        plt.title("Delta vs Time")
+        plt.ylabel("Distance to Target (m)")
+        plt.title("Distance to Target vs Time")
         plt.legend()
 
         fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
