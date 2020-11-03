@@ -107,7 +107,7 @@ def main():
         if ctrl_check == 'd':
             # Proportional Gain constant
             kp = [1, 0.75, 0.5, 0.25, 0.1]
-            ki, kd = -1, 10
+            ki, kd = 0, 0
 
             graph = Graphing(len(kp))
 

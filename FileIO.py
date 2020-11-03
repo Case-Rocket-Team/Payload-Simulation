@@ -28,7 +28,7 @@ class FileIO:
         parafoil_state['Altitude'] = float(input("Enter starting altitude (meters): "))
 
     def userPrompt(self):
-        check = input("Load parafoil data from json file (l)? ")
+        check = input("Load parafoil data from json file (l) or use auto settings (a)? ")
         return check
     def controlPrompt(self):
         check = input("Use P controller (y/n)? ")
@@ -47,5 +47,12 @@ class FileIO:
             parafoil = copy.deepcopy(parafoil_baked)
             p_check, c_check = None, None
             return parafoil, p_check, c_check
+        elif check == "a":
+            with open("n4418_pf_30x15.json") as f:
+                parafoil = json.load(f)
+            parafoil.update({'Payload Mass' : parafoil_baked['Payload Mass']})
+            parafoil.update({'Canopy Mass' : parafoil_baked['Canopy Mass']})
+            parafoil_state['Altitude'] = 1400
+            return parafoil, "y", "d"
         else:
             print("The hell's wrong with you?")
