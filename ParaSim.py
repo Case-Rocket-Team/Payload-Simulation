@@ -30,7 +30,7 @@ parafoil_state = {
     'Bank Angle' : 0,                   # degrees
     'Azimuth Angle' : 180,              # degrees from x-axis
     'Velocity' : 10.95,                 # m/s
-    'Wind Field': [0, 0, 0],
+    'Wind Field': [4.5, 0, 0]
 }
 
 # (x,y)
@@ -53,14 +53,14 @@ def main():
         # Return to Pad approach with random start points
         if ctrl_check == 'r':
             # Proportional Gain constants, integral gain, derivative gain
-            kp1, kp2 = 1, 1
-            ki1, ki2 = 0, 0
-            kd1, kd2 = 0, 0
+            kp1, kp2 = 0.5, 1
+            ki1, ki2 = 0.1, 0
+            kd1, kd2 = 10, 0
 
             apogees = apo.createApogeeArray(parafoil_state, 1)
             graph = Graphing(len(apogees))
 
-            unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, step_time, step, left_servo_angles, right_servo_angles, deflections = [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees),  [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees)
+            unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count = [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees),  [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees)
 
             for i in range(0, len(apogees)):
                 print("Iteration ", i)
@@ -69,17 +69,17 @@ def main():
                 unsteady_parafoil_state['Y-position'] = apogees[i][1]
                 unsteady_parafoil_state['Altitude'] = apogees[i][2]
                 unsteady_parafoil_state['Azimuth Angle'] = apogees[i][3]
-                unsteady_x_positions[i], unsteady_y_positions[i], unsteady_altitudes[i], unsteady_angles[i], unsteady_times[i], deltas[i], unsteady_azimuths[i], unsteady_bank_angles[i], step_time[i], step[i], left_servo_angles[i], right_servo_angles[i], deflections[i] = unsteady.runRTPControlLoop(parafoil, parafoil_state, unsteady_parafoil_state, target, kp1, kp2,  ki1, ki2, kd1, kd2, dt)
+                unsteady_x_positions[i], unsteady_y_positions[i], unsteady_altitudes[i], unsteady_angles[i], unsteady_times[i], deltas[i], unsteady_mags[i], unsteady_azimuths[i], unsteady_bank_angles[i], left_servo_angles[i], right_servo_angles[i], deflections[i], count_terminator[i], count[i] = unsteady.runRTPControlLoop(parafoil, parafoil_state, unsteady_parafoil_state, target, kp1, kp2,  ki1, ki2, kd1, kd2, dt)
 
             hits = 0
             for i in range(0, len(apogees)):
                 listSize = len(unsteady_x_positions[i])-1
                 if math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2)) < 10:
                     hits += 1
-                print("Apogee: ",apogees[i], " Distance From Target:" + str(math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2))))
+                print("Apogee: ", apogees[i], " Distance From Target:" + str(math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2))))
             print(hits, " hits out of ", len(apogees))
 
-            graph.varying_apogee_graphing(apogees, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, step_time, step, left_servo_angles, right_servo_angles, deflections)
+            graph.varying_apogee_graphing(apogees, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count)
 
         # Straight approach with varying kp
         if ctrl_check == 's':
@@ -106,9 +106,8 @@ def main():
         # Testing circularization w/ target dist control
         if ctrl_check == 'd':
             # Proportional Gain constant
-            kp = [1, 0.75, 0.5, 0.25, 0.1]
-            ki, kd = 0, 0
-
+            kp = [2]
+            ki, kd = 0, 20
             graph = Graphing(len(kp))
 
             unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, unsteady_azimuths, unsteady_bank_angles, unsteady_mags = [0] * len(kp), [0] * len(kp), [0] * len(kp), [0] * len(kp), [0] * len(kp), [0] * len(kp),  [0] * len(kp), [0] * len(kp)

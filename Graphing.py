@@ -43,7 +43,7 @@ class Graphing:
         ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
     # Graphing call for loop with varying apogees/start points
-    def varying_apogee_graphing(self, apogees, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, unsteady_bank_angles, step_time, step, left_servo_angles, right_servo_angles, deflections):
+    def varying_apogee_graphing(self, apogees, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count):
         plt.figure()
         for i in range(0, len(apogees)):
             plt.plot(unsteady_x_positions[i], unsteady_y_positions[i], label = "Apogee:" + str(i), c = self.col[i])
@@ -99,16 +99,26 @@ class Graphing:
         plt.title("Bank Angle vs Time")
         plt.legend()
 
+        
         plt.figure()
         for i in range(0, len(apogees)):
-            plt.plot(unsteady_times[i], deltas[i], label = "Apogees: " + str(i), c = self.col[i])
+            plt.plot(unsteady_times[i][0:count_terminator[i] + 1], unsteady_mags[i], label = "Apogees: " + str(i), c = self.col[i])
+        plt.plot([unsteady_times[0][0], unsteady_times[0][count_terminator[0]]], [150, 150], label = "Setpoint " + str(i), c = 'y')
+        plt.xlabel("Time (s)")
+        plt.ylabel("Distance to Target (m)")
+        plt.title("Distance to Target vs Time")
+        plt.legend()
+        
+        plt.figure()
         for i in range(0, len(apogees)):
-            plt.plot([0, step_time[i], step_time[i], 300], [step[i], step[i], 0, 0], label = "Setpoint Step " + str(i), c = 'y')
+            if unsteady_times[i][count[i]] == unsteady_times[i][-1]:
+                plt.plot(unsteady_times[i][count_terminator[i]:], deltas[i], label = "Apogees: " + str(i), c = self.col[i])
+                plt.plot([unsteady_times[i][count_terminator[i]], unsteady_times[0][-1]], [0, 0], label = "Setpoint " + str(i), c = 'y')
         plt.xlabel("Time (s)")
         plt.ylabel("Delta from Azimuth")
         plt.title("Delta vs Time")
         plt.legend()
-
+        
         fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
         for i in range(0, len(apogees)):
             ax.plot(unsteady_x_positions[i], unsteady_y_positions[i], unsteady_altitudes[i], c = self.col[i], label = "Apogees: " + str(i))

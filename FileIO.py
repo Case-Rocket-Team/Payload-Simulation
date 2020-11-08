@@ -53,6 +53,6 @@ class FileIO:
             parafoil.update({'Payload Mass' : parafoil_baked['Payload Mass']})
             parafoil.update({'Canopy Mass' : parafoil_baked['Canopy Mass']})
             parafoil_state['Altitude'] = 1400
-            return parafoil, "y", "d"
+            return parafoil, "y", "r"
         else:
             print("The hell's wrong with you?")
