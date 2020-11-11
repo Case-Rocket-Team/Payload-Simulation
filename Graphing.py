@@ -43,7 +43,7 @@ class Graphing:
         ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
     # Graphing call for loop with varying apogees/start points
-    def varying_apogee_graphing(self, apogees, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count):
+    def varying_apogee_graphing(self, apogees, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count, proportionals, integrals, derivatives):
         plt.figure()
         for i in range(0, len(apogees)):
             plt.plot(unsteady_x_positions[i], unsteady_y_positions[i], label = "Apogee:" + str(i), c = self.col[i])
@@ -54,42 +54,42 @@ class Graphing:
         plt.axis('square')
         plt.legend()
 
-        fig, ax = plt.subplots()
-        circle = plt.Circle((target[0], target[1]), 10, fill = False, color = 'k')
-        for i in range(0, len(apogees)):
-            plt.scatter(unsteady_x_positions[i][-1], unsteady_y_positions[i][-1], c = 'b')
-        plt.scatter(target[0], target[1], label = "Target", c = 'r')
-        ax.add_artist(circle)
-        plt.xlabel("X axis (m)")
-        plt.ylabel("Y axis (m)")
-        plt.title("Ground Hit Points")
-        plt.axis('square')
-        plt.legend()
+        # fig, ax = plt.subplots()
+        # circle = plt.Circle((target[0], target[1]), 10, fill = False, color = 'k')
+        # for i in range(0, len(apogees)):
+        #     plt.scatter(unsteady_x_positions[i][-1], unsteady_y_positions[i][-1], c = 'b')
+        # plt.scatter(target[0], target[1], label = "Target", c = 'r')
+        # ax.add_artist(circle)
+        # plt.xlabel("X axis (m)")
+        # plt.ylabel("Y axis (m)")
+        # plt.title("Ground Hit Points")
+        # plt.axis('square')
+        # plt.legend()
 
-        plt.figure()
-        for i in range(0, len(apogees)):
-            plt.plot(unsteady_times[i], deflections[i], label = "Unsteady State", c = self.col[i])
-        plt.xlabel("Time (s)")
-        plt.ylabel("Flap Deflection (deg)")
-        plt.title("Flap Deflection vs Time")
-        plt.legend()
+        # plt.figure()
+        # for i in range(0, len(apogees)):
+        #     plt.plot(unsteady_times[i], deflections[i], label = "Unsteady State", c = self.col[i])
+        # plt.xlabel("Time (s)")
+        # plt.ylabel("Flap Deflection (deg)")
+        # plt.title("Flap Deflection vs Time")
+        # plt.legend()
 
-        plt.figure()
-        for i in range(0, len(apogees)):
-            plt.plot(unsteady_times[i], left_servo_angles[i], label = "Left Servo", c = 'blue')
-            plt.plot(unsteady_times[i], right_servo_angles[i], label = "Right Servo", c = 'red')
-        plt.xlabel("Time (s)")
-        plt.ylabel("Angle (deg)")
-        plt.title("Servo Angle vs Time")
-        plt.legend()
+        # plt.figure()
+        # for i in range(0, len(apogees)):
+        #     plt.plot(unsteady_times[i], left_servo_angles[i], label = "Left Servo", c = 'blue')
+        #     plt.plot(unsteady_times[i], right_servo_angles[i], label = "Right Servo", c = 'red')
+        # plt.xlabel("Time (s)")
+        # plt.ylabel("Angle (deg)")
+        # plt.title("Servo Angle vs Time")
+        # plt.legend()
 
-        plt.figure()
-        for i in range(0, len(apogees)):
-            plt.plot(unsteady_times[i], unsteady_azimuths[i], label = "Apogee:" + str(i), c = self.col[i])
-        plt.xlabel("Time (s)")
-        plt.ylabel("Azimuth Angle")
-        plt.title("Azimuth vs Time")
-        plt.legend()
+        # plt.figure()
+        # for i in range(0, len(apogees)):
+        #     plt.plot(unsteady_times[i], unsteady_azimuths[i], label = "Apogee:" + str(i), c = self.col[i])
+        # plt.xlabel("Time (s)")
+        # plt.ylabel("Azimuth Angle")
+        # plt.title("Azimuth vs Time")
+        # plt.legend()
 
         plt.figure()
         for i in range(0, len(apogees)):
@@ -111,13 +111,37 @@ class Graphing:
         
         plt.figure()
         for i in range(0, len(apogees)):
-            if unsteady_times[i][count[i]] == unsteady_times[i][-1]:
-                plt.plot(unsteady_times[i][count_terminator[i]:], deltas[i], label = "Apogees: " + str(i), c = self.col[i])
-                plt.plot([unsteady_times[i][count_terminator[i]], unsteady_times[0][-1]], [0, 0], label = "Setpoint " + str(i), c = 'y')
+            plt.plot(unsteady_times[i][0:count_terminator[i] + 1], proportionals[i], label = "Apogees: " + str(i), c = self.col[i])
         plt.xlabel("Time (s)")
-        plt.ylabel("Delta from Azimuth")
-        plt.title("Delta vs Time")
+        plt.ylabel("P Term")
+        plt.title("P term vs Time")
         plt.legend()
+
+        plt.figure()
+        for i in range(0, len(apogees)):
+            plt.plot(unsteady_times[i][0:count_terminator[i] + 1], integrals[i], label = "Apogees: " + str(i), c = self.col[i])
+        plt.xlabel("Time (s)")
+        plt.ylabel("I Term")
+        plt.title("I term vs Time")
+        plt.legend()
+
+        plt.figure()
+        for i in range(0, len(apogees)):
+            plt.plot(unsteady_times[i][0:count_terminator[i] + 1], derivatives[i], label = "Apogees: " + str(i), c = self.col[i])
+        plt.xlabel("Time (s)")
+        plt.ylabel("D Term")
+        plt.title("D term vs Time")
+        plt.legend()
+
+        # plt.figure()
+        # for i in range(0, len(apogees)):
+        #     if unsteady_times[i][count[i]] == unsteady_times[i][-1]:
+        #         plt.plot(unsteady_times[i][count_terminator[i]:], deltas[i], label = "Apogees: " + str(i), c = self.col[i])
+        #         plt.plot([unsteady_times[i][count_terminator[i]], unsteady_times[0][-1]], [0, 0], label = "Setpoint " + str(i), c = 'y')
+        # plt.xlabel("Time (s)")
+        # plt.ylabel("Delta from Azimuth")
+        # plt.title("Delta vs Time")
+        # plt.legend()
         
         fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
         for i in range(0, len(apogees)):

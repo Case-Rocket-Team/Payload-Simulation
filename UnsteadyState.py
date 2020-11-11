@@ -191,6 +191,9 @@ class UnsteadyState:
         unsteady_altitudes = [unsteady_parafoil_state['Altitude']]
         unsteady_azimuths = [unsteady_parafoil_state['Azimuth Angle']]
         unsteady_bank_angles = [unsteady_parafoil_state['Bank Angle']]
+        proportionals = [0]
+        integrals = [0]
+        derivatives = [0]
         unsteady_mags = [ctrl.calcTargMag(unsteady_parafoil_state, target)]
         left_servo_angle, right_servo_angle = 0, 0
         left_servo_angles, right_servo_angles = [left_servo_angle], [right_servo_angle]
@@ -204,16 +207,20 @@ class UnsteadyState:
         loop_check = True
         call = 0
         pid = PIDController(kp1, ki1, kd1, 150)
-        pid.setIntegralLimits(25, -25)
+        pid.setIntegralLimits(200, -200)
         count = 0
         sim_count = 0
+        if delta_prime >= 0:
+            w = 1
+        else:
+            w = -1
         # Run loop that iterates the kinematic unsteady state equations
         # First loop attempts to keep payload in a circle around the pad
         while loop_check and unsteady_parafoil_state['Altitude'] > 0:
             self.updatePosition(parafoil, unsteady_parafoil_state, dt)
             targDist = ctrl.calcTargMag(unsteady_parafoil_state, target)
-            bank_angle = pid.calculate(targDist, dt)
-            unsteady_parafoil_state['Bank Angle'] = util.clamp(bank_angle, 25, -25)
+            bank_angle, proportional, integral, derivative = pid.calculate(targDist, dt)
+            unsteady_parafoil_state['Bank Angle'] = util.clamp(w * bank_angle, 25, -25)
             deflection_angle = ctrl.convertBankAngleToDeflect(parafoil, unsteady_parafoil_state)
             servo_angle = ctrl.convertDeflectToServo(parafoil, deflection_angle)
             left_servo_angle, right_servo_angle = ctrl.servoUpdater(left_servo_angle, right_servo_angle, servo_angle)
@@ -222,6 +229,9 @@ class UnsteadyState:
             deflections.append(deflection_angle)
             unsteady_time += dt
             unsteady_times.append(unsteady_time)
+            proportionals.append(proportional)
+            integrals.append(integral)
+            derivatives.append(derivative)
             unsteady_bank_angles.append(unsteady_parafoil_state['Bank Angle'])
             unsteady_azimuths.append(unsteady_parafoil_state['Azimuth Angle'])
             unsteady_angles.append(unsteady_parafoil_state['Glide Angle'])
@@ -229,6 +239,7 @@ class UnsteadyState:
             unsteady_y_positions.append(unsteady_parafoil_state['Y-position'])
             unsteady_altitudes.append(unsteady_parafoil_state['Altitude'])
             unsteady_mags.append(targDist)
+            '''
             # After reaching a certain height, start looking for approach path that will arrive <10m for target
             if unsteady_parafoil_state['Altitude'] < 200:
                 # print("Sim run ", sim_count)
@@ -239,6 +250,7 @@ class UnsteadyState:
                 sim_count += 1
             if unsteady_parafoil_state['Altitude'] < 60:
                 loop_check = False
+            '''
             count += 1
         count_terminator = count
         print("Approach start altitude: ", unsteady_parafoil_state['Altitude'])
@@ -267,7 +279,7 @@ class UnsteadyState:
             unsteady_altitudes.append(unsteady_parafoil_state['Altitude'])
             count += 1
         print("^^^Time is: ", unsteady_time, "Position is (x,y,z): (", unsteady_parafoil_state['X-position'], ", ", unsteady_parafoil_state['Y-position'], ", ", unsteady_parafoil_state['Altitude'], ")")
-        return unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count
+        return unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count, proportionals, integrals, derivatives
 
     # Sim run without controls
     def runLoop(self, parafoil, parafoil_state, unsteady_parafoil_state, target, dt):

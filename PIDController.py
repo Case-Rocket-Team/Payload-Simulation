@@ -1,7 +1,7 @@
 from util import util
 class PIDController:
 
-    lastOffset = 0
+    lastOffset = None
     accum = 0
     
     def __init__(self, kP, kI, kD, setpoint):
@@ -18,8 +18,10 @@ class PIDController:
     def calculate(self, state, dt):
         offset = state - self.setpoint
         proportional = self.kP * offset
+        if self.lastOffset == None:
+            self.lastOffset = offset
         derivative = self.kD * (offset - self.lastOffset) / dt
-        self.accum += offset*dt
+        self.accum += offset * dt
         integral = util.clamp(self.kI * self.accum, self.max, self.min)
         self.lastOffset = offset
-        return proportional + derivative + integral
+        return (proportional + derivative + integral), proportional, integral, derivative
