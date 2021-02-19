@@ -52,7 +52,7 @@ class FileIO:
                 parafoil = json.load(f)
             parafoil.update({'Payload Mass' : parafoil_baked['Payload Mass']})
             parafoil.update({'Canopy Mass' : parafoil_baked['Canopy Mass']})
-            parafoil_state['Altitude'] = 1400
+            parafoil_state['Altitude'] = 460
             return parafoil, "y", "r"
         else:
             print("The hell's wrong with you?")

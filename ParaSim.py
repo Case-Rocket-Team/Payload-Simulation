@@ -15,7 +15,7 @@ parafoil_baked = {
     'Span' : 1.016,                     # m
     'Chord' : 0.508,                    # m
     'Canopy Mass' : 0.049,              # kg
-    'Payload Mass' : 3,                 # kg
+    'Payload Mass' : 4,#3,                 # kg
     'Vehicle Coefficients' : {
         'CL' : 0.8,
         'CD' : 0.2,
@@ -25,12 +25,12 @@ parafoil_baked = {
 parafoil_state = {
     'X-position' : 0,                   # m
     'Y-position' : 0,                   # m 
-    'Altitude' : 1400,                  # m
+    'Altitude' : 0,                  # m
     'Glide Angle' : -23.3,              # degrees
-    'Bank Angle' : 0,                   # degrees
-    'Azimuth Angle' : 180,              # degrees from x-axis
+    'Bank Angle' : 24,                  # degrees
+    'Azimuth Angle' : 0,                # degrees from x-axis
     'Velocity' : 10.95,                 # m/s
-    'Wind Field': [8, 0, 0]
+    'Wind Field': [0, 0, 0]
 }
 
 # (x,y)
@@ -54,15 +54,22 @@ def main():
         if ctrl_check == 'r':
             # Proportional Gain constants, integral gain, derivative gain
             # 1 for circling controller, 2 for approach controller
-            kp1, kp2 = 3, 1
-            ki1, ki2 = 0.05, 0
-            kd1, kd2 = 30, 0
+            '''
+            kp1, kp2 = 1, 1
+            ki1, ki2 = 0.001, 0
+            kd1, kd2 = 32, 0
+            '''
+            kp1, kp2 = 1, 1
+            ki1, ki2 = 0.0001, 0
+            kd1, kd2 = 32, 0
 
-            apogees = apo.createApogeeArray(parafoil_state, 10)
+            # apogees = apo.createApogeeArray(parafoil_state, 10)
+            apogees = [[0,0,1000,0]]
             graph = Graphing(len(apogees))
 
             unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count = [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees),  [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees), [0] * len(apogees)
             proportionals, integrals, derivatives = [0] * len(apogees), [0] * len(apogees), [0] * len(apogees)
+            
 
             for i in range(0, len(apogees)):
                 print("Iteration ", i)
@@ -79,13 +86,16 @@ def main():
                 listSize = len(unsteady_x_positions[i])-1
                 if math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2)) < 10:
                     hits += 1
-                if math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2)) > 200:
+                if math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2)) > 250:
                     spirals += 1
-                print("Apogee: ", apogees[i], " Distance From Target:" + str(math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2))))
+                    flag = "!!!ALERT!!!"
+                else:
+                    flag = ""
+                print(flag, " Apogee: ", apogees[i], " Distance From Target:" + str(math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2))))
             print(hits, " hits out of ", len(apogees))
             print(spirals, " spirals out of ", len(apogees))
 
-            graph.varying_apogee_graphing(apogees, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count, proportionals, integrals, derivatives)
+            graph.varying_apogee_graphing(apogees, parafoil_state, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count, proportionals, integrals, derivatives)
 
         # Straight approach with varying kp
         if ctrl_check == 's':
@@ -129,6 +139,7 @@ def main():
             #     print("KP: " + str(kp[i]) + " Distance From Target:" + str(math.sqrt(math.pow(unsteady_x_positions[i][listSize] - target[0], 2) + math.pow(unsteady_y_positions[i][listSize] - target[1], 2))))
 
             graph.varying_gain_graphing(kp, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, unsteady_azimuths, unsteady_bank_angles, unsteady_mags)
+            
 
     elif control_prompt == 'n':
         graph = Graphing(1)

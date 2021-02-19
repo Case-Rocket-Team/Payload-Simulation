@@ -17,9 +17,9 @@ class PIDController:
 
     def calculate(self, state, dt):
         offset = state - self.setpoint
-        proportional = self.kP * offset
         if self.lastOffset == None:
             self.lastOffset = offset
+        proportional = self.kP * offset
         derivative = self.kD * (offset - self.lastOffset) / dt
         self.accum += offset * dt
         integral = util.clamp(self.kI * self.accum, self.max, self.min)
