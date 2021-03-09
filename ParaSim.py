@@ -15,7 +15,7 @@ parafoil_baked = {
     'Span' : 1.016,                     # m
     'Chord' : 0.508,                    # m
     'Canopy Mass' : 0.049,              # kg
-    'Payload Mass' : 4,#3,                 # kg
+    'Payload Mass' : 4, #3,                 # kg
     'Vehicle Coefficients' : {
         'CL' : 0.8,
         'CD' : 0.2,
@@ -25,9 +25,9 @@ parafoil_baked = {
 parafoil_state = {
     'X-position' : 0,                   # m
     'Y-position' : 0,                   # m 
-    'Altitude' : 0,                  # m
+    'Altitude' : 0,                     # m
     'Glide Angle' : -23.3,              # degrees
-    'Bank Angle' : 24,                  # degrees
+    'Bank Angle' : 0,                   # degrees
     'Azimuth Angle' : 0,                # degrees from x-axis
     'Velocity' : 10.95,                 # m/s
     'Wind Field': [0, 0, 0]
@@ -50,6 +50,16 @@ def main():
 
     dt = 0.1
     if control_prompt == 'y':
+        # Path follow test
+        if ctrl_check == 'p':
+            graph = Graphing(1)
+            kp, ki , kd = 0.75 , 0.001, 0 
+            unsteady_parafoil_state = copy.deepcopy(base_parafoil_state)
+            unsteady_parafoil_state['X-position'] = -2000
+            unsteady_parafoil_state['Altitude'] = 2000
+            unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, proportionals, integrals, derivatives, waypoints = unsteady.waypointFollower(parafoil, parafoil_state, unsteady_parafoil_state, target, kp, ki, kd, dt)
+            graph.path_graphing(target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, waypoints, proportionals, integrals, derivatives)
+
         # Return to Pad approach with random start points
         if ctrl_check == 'r':
             # Proportional Gain constants, integral gain, derivative gain

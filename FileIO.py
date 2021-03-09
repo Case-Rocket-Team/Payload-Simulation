@@ -32,7 +32,7 @@ class FileIO:
         return check
     def controlPrompt(self):
         check = input("Use P controller (y/n)? ")
-        ctrl_check = input("Use Return to Pad (r), distance to pad control (d), or Straight Approach (s)?")
+        ctrl_check = input("Use Return to Pad (r), distance to pad control (d), Straight Approach (s), or Waypoint Test (p)?")
         return check, ctrl_check
 
     def runUI(self, parafoil_baked, parafoil_state):
@@ -53,6 +53,6 @@ class FileIO:
             parafoil.update({'Payload Mass' : parafoil_baked['Payload Mass']})
             parafoil.update({'Canopy Mass' : parafoil_baked['Canopy Mass']})
             parafoil_state['Altitude'] = 460
-            return parafoil, "y", "r"
+            return parafoil, "y", "p"
         else:
             print("The hell's wrong with you?")

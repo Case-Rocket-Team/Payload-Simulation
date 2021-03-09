@@ -79,8 +79,8 @@ class UnsteadyState:
         unsteady_parafoil_state['Azimuth Angle'] += turning_rate * dt
         self.fixAzimuth(unsteady_parafoil_state)
         # Prints vehicle info on final iteration
-        # if unsteady_parafoil_state['Altitude'] < 0:
-        #     print("Downwind (x) Velocity: ", x_velocity, "m/s, Crosswind (y) Velocity: ", y_velocity, "m/s, Vertical Velocity: ", z_velocity, "m/s, Overall Velocity: ", unsteady_parafoil_state['Velocity'], "m/s, Glide Angle", unsteady_parafoil_state['Glide Angle'], "degrees, Azimuth Angle: ", unsteady_parafoil_state['Azimuth Angle'], "degrees, Turning Rate: ", turning_rate, "degrees/s")
+        if unsteady_parafoil_state['Altitude'] < 0:
+            print("Downwind (x) Velocity: ", x_velocity, "m/s, Crosswind (y) Velocity: ", y_velocity, "m/s, Vertical Velocity: ", z_velocity, "m/s, Overall Velocity: ", unsteady_parafoil_state['Velocity'], "m/s, Glide Angle", unsteady_parafoil_state['Glide Angle'], "degrees, Azimuth Angle: ", unsteady_parafoil_state['Azimuth Angle'], "degrees, Turning Rate: ", turning_rate, "degrees/s")
 
     # Straight approach control loop
     def runStraightControlLoop(self, parafoil, parafoil_state, unsteady_parafoil_state, target, kp, kd, ki, dt):
@@ -299,6 +299,106 @@ class UnsteadyState:
         print("^^^Time is: ", unsteady_time, "Position is (x,y,z): (", unsteady_parafoil_state['X-position'], ", ", unsteady_parafoil_state['Y-position'], ", ", unsteady_parafoil_state['Altitude'], ")")
         print(sim_count, sim_loop_count)
         return unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, count_terminator, count, proportionals, integrals, derivatives
+
+    def waypointGenerator(self, r_min, needed_arc_length, targ_dist):
+        b = 0
+        arc_length = 0
+        a = r_min
+        # Generate sine wave that is the proper length
+        while arc_length <= needed_arc_length:
+            b += 1
+            arc_length = 2 * b * util.magnitude(0,0,0,targ_dist/2/b,a,0)
+            # print(arc_length)
+            # print("b = ", b)
+        
+        while arc_length <= needed_arc_length + 100 and arc_length >= needed_arc_length + 100 and a > 0:
+            a -= 1
+            arc_length = 2 * b * util.magnitude(0,0,0,targ_dist/2/b,a,0)
+            # print(arc_length)
+            # print("a = ", a)
+        
+        
+        # Generate waypoints along sine wave
+        x = 0
+        waypoints = []
+        while x <= targ_dist:
+            y = a * math.sin(b * math.pi / targ_dist * x)
+            waypoints.append([x - targ_dist,y, 0])
+            x += targ_dist / 4 / b
+        # print(waypoints)
+        return waypoints
+
+    # Testing waypoint pid
+    def waypointFollower(self, parafoil, parafoil_state, unsteady_parafoil_state, target, kp, ki, kd, dt):
+        # Need to get minimum turn radius predefined in a dict
+        r_min = 50
+        ctrl = ControlCalculations()
+        unsteady_parafoil_state['Velocity'] = parafoil_state['Velocity']
+        unsteady_parafoil_state['Glide Angle'] = parafoil_state['Glide Angle']
+        unsteady_times = [0]
+        unsteady_angles = [0]
+        unsteady_x_positions = [unsteady_parafoil_state['X-position']]
+        unsteady_y_positions = [unsteady_parafoil_state['Y-position']]
+        unsteady_altitudes = [unsteady_parafoil_state['Altitude']]
+        unsteady_azimuths = [unsteady_parafoil_state['Azimuth Angle']]
+        unsteady_bank_angles = [unsteady_parafoil_state['Bank Angle']]
+        proportionals = [0]
+        integrals = [0]
+        derivatives = [0]
+        unsteady_mags = [ctrl.calcTargMag(unsteady_parafoil_state, target)]
+        left_servo_angle, right_servo_angle = 0, 0
+        left_servo_angles, right_servo_angles = [left_servo_angle], [right_servo_angle]
+        deflections = [0]
+        unsteady_time = 0
+        deltas = []
+        # Run check to see what region target is in
+        delta_prime = ctrl.calcAzimuthDelta(unsteady_parafoil_state, target, deltas)
+        # Set up pid controller
+        pid = PIDController(kp, ki, kd, 0)
+        pid.setIntegralLimits(100,-100)
+        ctrl.calcTargMag(unsteady_parafoil_state,target)
+        # Generate waypoints
+        targ_dist = ctrl.calcTargMag(unsteady_parafoil_state, target)
+        # needed arc length is altitude divided by vertical velocity times horizontal velocity
+        needed_arc_length = unsteady_parafoil_state['Altitude'] / 7.35 * 17.07
+        print("Distance needed to travel: ", needed_arc_length)
+        waypoints = self.waypointGenerator(r_min, needed_arc_length, targ_dist)
+        i = 0
+        num_of_waypoints = len(waypoints)
+        temp_targ = waypoints[0]
+        while unsteady_parafoil_state['Altitude'] > 0:
+            # Update position through kinematics
+            self.updatePosition(parafoil, unsteady_parafoil_state, dt)
+            # Calc delta angle heading is away from target
+            delta = ctrl.calcAzimuthDelta(unsteady_parafoil_state, temp_targ, deltas)
+            bank_angle, proportional, integral, derivative = pid.calculate(delta, dt)
+            unsteady_parafoil_state['Bank Angle'] = util.clamp(bank_angle, 24, -24)
+            deflection_angle = ctrl.convertBankAngleToDeflect(parafoil, unsteady_parafoil_state)
+            servo_angle = ctrl.convertDeflectToServo(parafoil, deflection_angle)
+            left_servo_angle, right_servo_angle = ctrl.servoUpdater(left_servo_angle, right_servo_angle, servo_angle)
+            left_servo_angles.append(left_servo_angle)
+            right_servo_angles.append(right_servo_angle)
+            deflections.append(deflection_angle)
+            proportionals.append(proportional)
+            integrals.append(integral)
+            derivatives.append(derivative)
+            unsteady_time += dt
+            unsteady_times.append(unsteady_time)
+            unsteady_bank_angles.append(unsteady_parafoil_state['Bank Angle'])
+            unsteady_azimuths.append(unsteady_parafoil_state['Azimuth Angle'])
+            unsteady_angles.append(unsteady_parafoil_state['Glide Angle'])
+            unsteady_x_positions.append(unsteady_parafoil_state['X-position'])
+            unsteady_y_positions.append(unsteady_parafoil_state['Y-position'])
+            unsteady_altitudes.append(unsteady_parafoil_state['Altitude'])
+            if i == num_of_waypoints - 1:
+                temp_targ = target
+            elif ctrl.calcTargMag(unsteady_parafoil_state, waypoints[i]) < 5:
+                i += 1
+                temp_targ = waypoints[i]
+                print("New Waypoint: ", waypoints[i])
+        print("^^^Time is: ", unsteady_time, "Position is (x,y,z): (", unsteady_parafoil_state['X-position'], ", ", unsteady_parafoil_state['Y-position'], ", ", unsteady_parafoil_state['Altitude'], ")")
+        return unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_mags, unsteady_azimuths, unsteady_bank_angles, left_servo_angles, right_servo_angles, deflections, proportionals, integrals, derivatives, waypoints
+
 
     # Sim run without controls
     def runLoop(self, parafoil, parafoil_state, unsteady_parafoil_state, target, dt):

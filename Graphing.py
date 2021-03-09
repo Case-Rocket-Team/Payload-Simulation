@@ -206,7 +206,7 @@ class Graphing:
         ax.legend()
         plt.show()
 
-    # Graphing call for running loop without control
+    # Graphing call for running loop with path following
     def uncontrolled_graphing(self, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths):
         plt.plot(unsteady_x_positions, unsteady_altitudes, label = "Unsteady State")
         plt.xlabel("Downrange Distance (m)")
@@ -263,3 +263,95 @@ class Graphing:
         self.set_axes_equal(ax)
         ax.legend()
         plt.show()    
+
+    def path_graphing(self, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, waypoints, proportionals, integrals, derivatives):
+        plt.plot(unsteady_x_positions, unsteady_altitudes, label = "Unsteady State")
+        plt.xlabel("Downrange Distance (m)")
+        plt.ylabel("Altitude (m)")
+        plt.title("Altitude and Downrange Distance")
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        # plt.figure()
+        # plt.plot(times, altitudes, label = "Steady State")
+        # plt.plot(unsteady_times, unsteady_altitudes, label = "Unsteady State")
+        # plt.xlabel("Time (s)")
+        # plt.ylabel("Altitude (m)")
+        # plt.title("Altitude vs Time")
+        # plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        plt.figure()
+        # plt.plot(unsteady_x_positions, unsteady_y_positions, label = "Vehicle Path", c = "b")
+        way_x = []
+        way_y = []
+        for i in range(len(waypoints)):
+            way_x.append(waypoints[i][0])
+            way_y.append(waypoints[i][1])
+        plt.scatter(way_x, way_y, c = "g", s = 10, label = "Waypoints")
+        plt.scatter(target[0], target [1], c = "r", label = "Target", s = 10)
+        plt.scatter(unsteady_x_positions[0], unsteady_y_positions[0], label = "Vehicle", c = "b")
+        plt.xlabel("X-position (m)")
+        plt.ylabel("Y-position (m)")
+        plt.title("X-position vs Y-position")
+        plt.axis('equal')
+        plt.legend()
+
+        plt.figure()
+        plt.plot(unsteady_times, unsteady_azimuths, label = "Unsteady State", c = "b")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Azimuth Angle (deg)")
+        plt.title("Azimuth vs Time")
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        plt.figure()
+        plt.plot(unsteady_times, deltas, label = "Unsteady State", c = "b")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Delta from Azimuth (deg)")
+        plt.title("Delta vs Time")
+        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        # plt.figure()
+        # plt.plot(times, angles, label = "Steady State")
+        # plt.plot(unsteady_times, unsteady_angles, label = "Unsteady State")
+        # plt.xlabel("Time (s)")
+        # plt.ylabel("Angle of Flight")
+        # plt.title("Glide Angle vs Time")
+        # plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+        plt.figure()
+        plt.plot(unsteady_times, proportionals)
+        plt.xlabel("Time (s)")
+        plt.ylabel("P Term")
+        plt.title("P term vs Time")
+
+        plt.figure()
+        plt.plot(unsteady_times, integrals)
+        plt.xlabel("Time (s)")
+        plt.ylabel("I Term")
+        plt.title("I term vs Time")
+
+        plt.figure()
+        plt.plot(unsteady_times, derivatives)
+        plt.xlabel("Time (s)")
+        plt.ylabel("D Term")
+        plt.title("D term vs Time")
+
+        fig, ax = plt.subplots(subplot_kw={'projection': '3d'})
+        #ax.plot(x_positions, y_positions, altitudes, c = 'Blue', label = "Steady State")
+        # ax.plot(unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, c = "b", label = "Vehicle Path")
+        ax.scatter(target[0], target[1], 0, c = 'Red', label = "Target", s = 10)
+        way_x = []
+        way_y = []
+        way_z = []
+        for i in range(len(waypoints)):
+            way_x.append(waypoints[i][0])
+            way_y.append(waypoints[i][1])
+            way_z.append(waypoints[i][2])
+        ax.scatter(way_x,way_y,way_z, c = 'g', label = "Waypoints", s = 5)
+        ax.scatter(unsteady_x_positions[0], unsteady_y_positions[0], unsteady_altitudes[0], c = "b", label = "Vehicle")
+        ax.set_title("Parafoil Path")
+        ax.set_xlabel("Downwind X (m)")
+        ax.set_ylabel("Crosswind Y (m)")
+        ax.set_zlabel("Altitude Z (m)")
+        self.set_axes_equal(ax)
+        ax.legend()
+        plt.show() 
