@@ -264,7 +264,7 @@ class Graphing:
         ax.legend()
         plt.show()    
 
-    def path_graphing(self, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, waypoints, proportionals, integrals, derivatives):
+    def path_graphing(self, target, unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, unsteady_angles, unsteady_times, deltas, unsteady_azimuths, waypoints, waypoints2, proportionals, integrals, derivatives):
         plt.plot(unsteady_x_positions, unsteady_altitudes, label = "Unsteady State")
         plt.xlabel("Downrange Distance (m)")
         plt.ylabel("Altitude (m)")
@@ -281,12 +281,18 @@ class Graphing:
 
         plt.figure()
         # plt.plot(unsteady_x_positions, unsteady_y_positions, label = "Vehicle Path", c = "b")
-        way_x = []
-        way_y = []
-        for i in range(len(waypoints)):
-            way_x.append(waypoints[i][0])
-            way_y.append(waypoints[i][1])
-        plt.scatter(way_x, way_y, c = "g", s = 10, label = "Waypoints")
+        # way_x = []
+        # way_y = []
+        # for i in range(len(waypoints)):
+        #     way_x.append(waypoints[i][0])
+        #     way_y.append(waypoints[i][1])
+        way_x2 = []
+        way_y2 = []
+        for i in range(len(waypoints2)):
+            way_x2.append(waypoints2[i][0])
+            way_y2.append(waypoints2[i][1])
+        # plt.scatter(way_x, way_y, c = "g", s = 10, label = "Waypoints")
+        plt.scatter(way_x2, way_y2, c = "k", s = 10, label = "Waypoints 2")
         plt.scatter(target[0], target [1], c = "r", label = "Target", s = 10)
         plt.scatter(unsteady_x_positions[0], unsteady_y_positions[0], label = "Vehicle", c = "b")
         plt.xlabel("X-position (m)")
@@ -339,14 +345,22 @@ class Graphing:
         #ax.plot(x_positions, y_positions, altitudes, c = 'Blue', label = "Steady State")
         # ax.plot(unsteady_x_positions, unsteady_y_positions, unsteady_altitudes, c = "b", label = "Vehicle Path")
         ax.scatter(target[0], target[1], 0, c = 'Red', label = "Target", s = 10)
-        way_x = []
-        way_y = []
-        way_z = []
-        for i in range(len(waypoints)):
-            way_x.append(waypoints[i][0])
-            way_y.append(waypoints[i][1])
-            way_z.append(waypoints[i][2])
-        ax.scatter(way_x,way_y,way_z, c = 'g', label = "Waypoints", s = 5)
+        # way_x = []
+        # way_y = []
+        # way_z = []
+        # for i in range(len(waypoints)):
+        #     way_x.append(waypoints[i][0])
+        #     way_y.append(waypoints[i][1])
+        #     way_z.append(waypoints[i][2])
+        way_x2 = []
+        way_y2 = []
+        way_z2 = []
+        for i in range(len(waypoints2)):
+            way_x2.append(waypoints2[i][0])
+            way_y2.append(waypoints2[i][1])
+            way_z2.append(waypoints2[i][2])
+        # ax.scatter(way_x,way_y,way_z, c = 'g', label = "Waypoints", s = 5)
+        ax.scatter(way_x2,way_y2,way_z2, c = 'k', label = "Waypoints 2", s = 5)
         ax.scatter(unsteady_x_positions[0], unsteady_y_positions[0], unsteady_altitudes[0], c = "b", label = "Vehicle")
         ax.set_title("Parafoil Path")
         ax.set_xlabel("Downwind X (m)")
